@@ -1,12 +1,18 @@
 import argparse
 import logging
 import os
+from enum import Enum
 
 DEFAULT_HOST = ''
 DEFAULT_PORT = 8081
 DEFAULT_SRC = './'
-DEFAULT_DEST = './'
-VERBOCITY = {1: logging.DEBUG, 2: logging.INFO, 3: logging.ERROR}
+DEFAULT_DEST = 'lib/bucket'
+VERBOSITY = {1: logging.DEBUG, 2: logging.INFO, 3: logging.ERROR}
+
+class Command(Enum):
+    UPLOAD = 'u'
+    DOWNLOAD = 'd'
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Parse flags for File Transfer App')
@@ -33,7 +39,7 @@ def parse_upload_file():
 def parse_download_file():
     parser = parse_args()
     parser.add_argument(
-        '-d', '--dst', help='Destination file path', dest='dest', type=str, action='store', required=True)
+        '-d', '--dst', help='Destination file path', dest='dst', type=str, action='store', required=True)
     parser.add_argument(
         '-n', '--name', help='filename', dest='filename', type=str, action='store')
     return validate_args(parser.parse_args())
@@ -47,7 +53,7 @@ def parse_server_start():
 
 def validate_args(args):
     if args.verbose:
-        args.verbose = level=VERBOCITY[args.verbose]
+        args.verbose = level=VERBOSITY[args.verbose]
     if args.quiet:
         # TODO encontrar un NOSET que funque
         logging.basicConfig(level=logging.CRITICAL)
@@ -57,6 +63,8 @@ def validate_args(args):
         if args.port < 1024 or args.port > 65535:
             args.port = DEFAULT_PORT
     if args.filename:
-        if not os.path.exists(args.filename):
-            raise Exception('File not found')
+        # FIXME: this changes if the command is upload or download.
+        # if not os.path.exists(args.filename):
+        #     raise Exception(f'File {args.filename} not found')
+        pass
     return args
