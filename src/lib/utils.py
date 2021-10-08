@@ -39,7 +39,7 @@ def parse_upload_file():
 def parse_download_file():
     parser = parse_args()
     parser.add_argument(
-        '-d', '--dst', help='Destination file path', dest='dest', type=str, action='store', required=True)
+        '-d', '--dst', help='Destination file path', dest='dst', type=str, action='store', required=True)
     parser.add_argument(
         '-n', '--name', help='filename', dest='filename', type=str, action='store')
     return validate_args(parser.parse_args())
@@ -63,6 +63,8 @@ def validate_args(args):
         if args.port < 1024 or args.port > 65535:
             args.port = DEFAULT_PORT
     if args.filename:
-        if not os.path.exists(args.filename):
-            raise Exception('File not found')
+        # FIXME: this changes if the command is upload or download.
+        # if not os.path.exists(args.filename):
+        #     raise Exception(f'File {args.filename} not found')
+        pass
     return args

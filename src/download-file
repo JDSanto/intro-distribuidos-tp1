@@ -1,4 +1,6 @@
-from lib.client import transfer_file
+#!/usr/bin/python3
+
+from lib.client import download_file
 from lib.utils import parse_download_file   
 import logging
 
@@ -9,7 +11,7 @@ if __name__ == "__main__":
     logger = logging.getLogger(__name__)
 
     logger.info('Starting File Transfer App with TCP')
-    transfer_file(os.path.join(args.src, args.filename), args.port, logger)
+    download_file(args.dst, args.filename, args.port, logger)
     logger.info('File transfer complete')
 
     
