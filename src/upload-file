@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from lib.client import transfer_file
+from lib.client import TCPClient
 from lib.utils import parse_upload_file   
 import logging
 import os
@@ -8,10 +8,11 @@ import os
 if __name__ == "__main__":
     
     args = parse_upload_file()
-    logging.basicConfig(level=args.verbose)
+    logging.basicConfig(level=args.verbose, format='%(asctime)s %(levelname)s: %(message)s', datefmt='%Y/%m/%d %H:%M:%S')
     logger = logging.getLogger(__name__)
 
-    logger.info('Starting File Transfer App with TCP')
-    transfer_file(args.src, args.filename, args.port, logger)
+    client = TCPClient(args.port, args.filename, logger)
+    logger.info('Starting File Transfer App with TCP...')
+    client.transfer_file(args.src)
     logger.info('File transfer complete')
 
