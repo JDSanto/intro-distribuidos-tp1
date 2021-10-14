@@ -75,3 +75,14 @@ def validate_args(args):
 def get_partitions(file_size):
     return file_size // MSJ_SIZE, file_size % MSJ_SIZE
             
+def send_file(socket, file, file_size):
+    f_partitions , last_partition_size = get_partitions(file_size)
+    for _ in range(f_partitions):
+        socket.send(file.read(MSJ_SIZE))
+    socket.send(file.read(last_partition_size))
+
+def receive_file(socket, file, file_size):
+    f_partitions, last_partition_size = get_partitions(file_size)
+    for _ in range(f_partitions):
+        file.write(socket.recv(MSJ_SIZE))
+    file.write(socket.recv(last_partition_size))

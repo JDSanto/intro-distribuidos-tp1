@@ -58,34 +58,41 @@ class TCPServer(Server):
                 self.send_file(connection_socket)
 
     def receive_file(self, connection_socket):
-        file_size = int.from_bytes(connection_socket.recv(INT_SIZE), 'big')
-        filename_size = int.from_bytes(connection_socket.recv(INT_SIZE), 'big')
-        
-        filename = connection_socket.recv(filename_size).decode()
-        self.logger.info(f'Receiving file: {filename}')
-
         if not os.path.isdir(self.dest_folder):
             self.logger.info(f'Creating destination folder: {self.dest_folder}')
             os.makedirs(self.dest_folder)
 
+        # Recieve filename size and file size
+        file_size = int.from_bytes(connection_socket.recv(INT_SIZE), 'big')
+        filename_size = int.from_bytes(connection_socket.recv(INT_SIZE), 'big')
+        
+        # Recieve filename
+        filename = connection_socket.recv(filename_size).decode()
+        self.logger.info(f'Receiving file: {filename}')
 
+        # Recieve file
         with open(os.path.join(self.dest_folder, filename), 'wb') as f:
-            f_partitions, last_partition_size = get_partitions(file_size)
-            for _ in range(f_partitions):
-                f.write(connection_socket.recv(MSJ_SIZE))
-            f.write(connection_socket.recv(last_partition_size))
+            receive_file(connection_socket, f, file_size)
             
         self.logger.info(f'Finished uploading: {filename}')
 
     def send_file(self, connection_socket):
-        filename = connection_socket.recv(MSJ_SIZE).decode()
+        # Recieve filename size
+        filename_size = int.from_bytes(connection_socket.recv(INT_SIZE), 'big')        
+        
+        # Recieve filename
+        filename = connection_socket.recv(filename_size).decode()
         self.logger.info(f'Receiving file: {filename}')
 
+        # Send file size
+        file_size = os.path.getsize(os.path.join(self.dest_folder, filename))
+        connection_socket.send(file_size.to_bytes(INT_SIZE, byteorder='big'))
+        
+        # Send file
         # TODO: check if file exists, send error if it doesn't
         self.logger.info('Sending file')
         with open(os.path.join(self.dest_folder, filename), 'rb') as f:
-            while data := f.read(MSJ_SIZE):
-                connection_socket.send(data)
+            send_file(connection_socket, f, file_size)
 
         self.logger.info(f'Finished sending: {filename}')
         connection_socket.close()

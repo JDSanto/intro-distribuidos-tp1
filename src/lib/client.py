@@ -48,29 +48,30 @@ class TCPClient(Client):
             self.logger.error(f'The file {filepath} does not exist')
             return
 
+        # Connect to the server
         client_socket = self.connect_socket()
         if client_socket is None:
             return
 
+        # Send the command to the server
         self.logger.info('Sending UPLOAD command')
         client_socket.send(Command.UPLOAD.value.encode())
 
+        # Send the filename size and the file size
         self.logger.info('Sending File size')
         file_size = os.path.getsize(filepath)
         filename_size = len(self.filename)
-
         client_socket.send(file_size.to_bytes(INT_SIZE, byteorder='big'))
         client_socket.send(filename_size.to_bytes(INT_SIZE, byteorder='big'))
 
+        # Send the filename
         self.logger.info(f'Sending filename: {self.filename}')
         client_socket.send(self.filename.encode())
         
+        # Send the file
         self.logger.info('Sending file')
         with open(filepath, 'rb') as f:
-            f_partitions , last_partition_size = get_partitions(file_size)
-            for _ in range(f_partitions):
-                client_socket.send(f.read(MSJ_SIZE))
-            client_socket.send(f.read(last_partition_size))
+           send_file(client_socket, f, file_size)
 
         # TODO: Check if we can/should handle a server response after file was sent
         # logger.info('Waiting for server response')
@@ -86,19 +87,31 @@ class TCPClient(Client):
             self.logger.info(f'Creating destination folder: {dest_folder}')
             os.makedirs(dest_folder)
 
+        # Connect to the server
         client_socket = self.connect_socket()
         if client_socket is None:
             return
 
+        # Send the command to the server
         self.logger.info(f'Sending DOWNLOAD command')
         client_socket.send(Command.DOWNLOAD.value.encode())
+        
+        # Send the filename size
+        self.logger.info('Sending File size')
+        filename_size = len(self.filename)
+        client_socket.send(filename_size.to_bytes(INT_SIZE, byteorder='big'))
+
+        # Send filename
         self.logger.info(f'Sending filename: {self.filename}')
         client_socket.send(self.filename.encode())
 
+        # Recieve the file size
+        file_size = int.from_bytes(client_socket.recv(INT_SIZE), 'big')        
+    
+        # Recieve the file
         self.logger.info('Downloading file')
         with open(os.path.join(dest_folder, self.filename), 'wb') as f:
-            while data := client_socket.recv(1024):
-                f.write(data)
+            receive_file(client_socket, f, file_size)
 
         self.logger.info('File downloaded')
         client_socket.close()
