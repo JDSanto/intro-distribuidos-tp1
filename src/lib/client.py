@@ -2,7 +2,7 @@ import socket
 import json
 import base64
 import os
-from lib.utils import *
+from lib import utils
 
 server_name = 'localhost'
 
@@ -55,14 +55,15 @@ class TCPClient(Client):
 
         # Send the command to the server
         self.logger.info('Sending UPLOAD command')
-        client_socket.send(Command.UPLOAD.value.encode())
+        client_socket.send(utils.Command.UPLOAD.value.encode())
 
         # Send the filename size and the file size
         self.logger.info('Sending File size')
         file_size = os.path.getsize(filepath)
+        print(file_size)
         filename_size = len(self.filename)
-        client_socket.send(file_size.to_bytes(INT_SIZE, byteorder='big'))
-        client_socket.send(filename_size.to_bytes(INT_SIZE, byteorder='big'))
+        client_socket.send(file_size.to_bytes(utils.INT_SIZE, byteorder='big'))
+        client_socket.send(filename_size.to_bytes(utils.INT_SIZE, byteorder='big'))
 
         # Send the filename
         self.logger.info(f'Sending filename: {self.filename}')
@@ -71,7 +72,7 @@ class TCPClient(Client):
         # Send the file
         self.logger.info('Sending file')
         with open(filepath, 'rb') as f:
-           send_file(client_socket, f, file_size)
+           utils.send_file(client_socket, f, file_size)
 
         # TODO: Check if we can/should handle a server response after file was sent
         # logger.info('Waiting for server response')
@@ -111,7 +112,7 @@ class TCPClient(Client):
         # Recieve the file
         self.logger.info('Downloading file')
         with open(os.path.join(dest_folder, self.filename), 'wb') as f:
-            receive_file(client_socket, f, file_size)
+            utils.receive_file(client_socket, f, file_size)
 
         self.logger.info('File downloaded')
         client_socket.close()

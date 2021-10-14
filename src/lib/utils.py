@@ -31,6 +31,7 @@ def parse_args():
     
     return parser
     
+
 def parse_upload_file():
     parser = parse_args()
     parser.add_argument(
@@ -38,6 +39,7 @@ def parse_upload_file():
     parser.add_argument(
         '-n', '--name', help='file name', dest='filename', type=str, action='store', required=True)
     return validate_args(parser.parse_args())
+
 
 def parse_download_file():
     parser = parse_args()
@@ -47,12 +49,14 @@ def parse_download_file():
         '-n', '--name', help='filename', dest='filename', type=str, action='store')
     return validate_args(parser.parse_args())
 
+
 def parse_server_start():
     parser = parse_args()
     parser.add_argument(
         '-s', '--storage', help='storage dir path', dest='dest', type=str, action='store', required=True, default=DEFAULT_DEST)
     parser.add_argument('--name', dest='filename')
     return validate_args(parser.parse_args())
+
 
 def validate_args(args):
     if args.verbose:
@@ -72,17 +76,15 @@ def validate_args(args):
         pass
     return args
 
-def get_partitions(file_size):
-    return file_size // MSJ_SIZE, file_size % MSJ_SIZE
-            
+
 def send_file(socket, file, file_size):
-    f_partitions , last_partition_size = get_partitions(file_size)
-    for _ in range(f_partitions):
-        socket.send(file.read(MSJ_SIZE))
-    socket.send(file.read(last_partition_size))
+    while file_size > 0:
+        data = file.read(min(MSJ_SIZE, file_size))
+        socket.send(data)
+        file_size -= len(data)
 
 def receive_file(socket, file, file_size):
-    f_partitions, last_partition_size = get_partitions(file_size)
-    for _ in range(f_partitions):
-        file.write(socket.recv(MSJ_SIZE))
-    file.write(socket.recv(last_partition_size))
+    while file_size > 0:
+        data = socket.recv(min(MSJ_SIZE, file_size))
+        file.write(data)
+        file_size -= len(data)

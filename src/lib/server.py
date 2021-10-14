@@ -1,6 +1,6 @@
 import socket
 import os
-from lib.utils import *
+from lib import utils
 
 class Server:
     def __init__(self, host, port, dest_folder, logger):
@@ -49,12 +49,12 @@ class TCPServer(Server):
         # TODO: multithreading
         while True:
             connection_socket, addr = self.server_socket.accept()
-            command = Command(connection_socket.recv(1).decode())
+            command = utils.Command(connection_socket.recv(1).decode())
 
-            if command == Command.UPLOAD:
+            if command == utils.Command.UPLOAD:
                 self.receive_file(connection_socket)
 
-            if command == Command.DOWNLOAD:
+            if command == utils.Command.DOWNLOAD:
                 self.send_file(connection_socket)
 
     def receive_file(self, connection_socket):
@@ -63,8 +63,8 @@ class TCPServer(Server):
             os.makedirs(self.dest_folder)
 
         # Recieve filename size and file size
-        file_size = int.from_bytes(connection_socket.recv(INT_SIZE), 'big')
-        filename_size = int.from_bytes(connection_socket.recv(INT_SIZE), 'big')
+        file_size = int.from_bytes(connection_socket.recv(utils.INT_SIZE), 'big')
+        filename_size = int.from_bytes(connection_socket.recv(utils.INT_SIZE), 'big')
         
         # Recieve filename
         filename = connection_socket.recv(filename_size).decode()
@@ -72,13 +72,13 @@ class TCPServer(Server):
 
         # Recieve file
         with open(os.path.join(self.dest_folder, filename), 'wb') as f:
-            receive_file(connection_socket, f, file_size)
+            utils.receive_file(connection_socket, f, file_size)
             
         self.logger.info(f'Finished uploading: {filename}')
 
     def send_file(self, connection_socket):
         # Recieve filename size
-        filename_size = int.from_bytes(connection_socket.recv(INT_SIZE), 'big')        
+        filename_size = int.from_bytes(connection_socket.recv(utils.INT_SIZE), 'big')        
         
         # Recieve filename
         filename = connection_socket.recv(filename_size).decode()
@@ -86,13 +86,13 @@ class TCPServer(Server):
 
         # Send file size
         file_size = os.path.getsize(os.path.join(self.dest_folder, filename))
-        connection_socket.send(file_size.to_bytes(INT_SIZE, byteorder='big'))
+        connection_socket.send(file_size.to_bytes(utils.INT_SIZE, byteorder='big'))
         
         # Send file
         # TODO: check if file exists, send error if it doesn't
         self.logger.info('Sending file')
         with open(os.path.join(self.dest_folder, filename), 'rb') as f:
-            send_file(connection_socket, f, file_size)
+            utils.send_file(connection_socket, f, file_size)
 
         self.logger.info(f'Finished sending: {filename}')
         connection_socket.close()
