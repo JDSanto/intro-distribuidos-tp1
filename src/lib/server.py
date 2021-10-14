@@ -1,6 +1,6 @@
 import socket
 import os
-from lib.utils import Command
+from lib.utils import *
 
 class Server:
     def __init__(self, host, port, dest_folder, logger):
@@ -43,7 +43,7 @@ class TCPServer(Server):
     def start_server(self):
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_socket.bind(('', self.port))
-        self.server_socket.listen(1)
+        self.server_socket.listen(0)
         self.logger.info('The server is ready to receive')
 
         # TODO: multithreading
@@ -58,27 +58,33 @@ class TCPServer(Server):
                 self.send_file(connection_socket)
 
     def receive_file(self, connection_socket):
-        filename = connection_socket.recv(1024).decode()
+        file_size = int.from_bytes(connection_socket.recv(INT_SIZE), 'big')
+        filename_size = int.from_bytes(connection_socket.recv(INT_SIZE), 'big')
+        
+        filename = connection_socket.recv(filename_size).decode()
         self.logger.info(f'Receiving file: {filename}')
 
         if not os.path.isdir(self.dest_folder):
             self.logger.info(f'Creating destination folder: {self.dest_folder}')
             os.makedirs(self.dest_folder)
 
-        with open(os.path.join(self.dest_folder, filename), 'wb') as f:
-            while data := connection_socket.recv(1024):
-                f.write(data)
 
+        with open(os.path.join(self.dest_folder, filename), 'wb') as f:
+            f_partitions, last_partition_size = get_partitions(file_size)
+            for _ in range(f_partitions):
+                f.write(connection_socket.recv(MSJ_SIZE))
+            f.write(connection_socket.recv(last_partition_size))
+            
         self.logger.info(f'Finished uploading: {filename}')
 
     def send_file(self, connection_socket):
-        filename = connection_socket.recv(1024).decode()
+        filename = connection_socket.recv(MSJ_SIZE).decode()
         self.logger.info(f'Receiving file: {filename}')
 
         # TODO: check if file exists, send error if it doesn't
         self.logger.info('Sending file')
         with open(os.path.join(self.dest_folder, filename), 'rb') as f:
-            while data := f.read(1024):
+            while data := f.read(MSJ_SIZE):
                 connection_socket.send(data)
 
         self.logger.info(f'Finished sending: {filename}')

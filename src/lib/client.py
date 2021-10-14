@@ -2,7 +2,7 @@ import socket
 import json
 import base64
 import os
-from lib.utils import Command
+from lib.utils import *
 
 server_name = 'localhost'
 
@@ -54,14 +54,24 @@ class TCPClient(Client):
 
         self.logger.info('Sending UPLOAD command')
         client_socket.send(Command.UPLOAD.value.encode())
+
+        self.logger.info('Sending File size')
+        file_size = os.path.getsize(filepath)
+        filename_size = len(self.filename)
+
+        client_socket.send(file_size.to_bytes(INT_SIZE, byteorder='big'))
+        client_socket.send(filename_size.to_bytes(INT_SIZE, byteorder='big'))
+
         self.logger.info(f'Sending filename: {self.filename}')
         client_socket.send(self.filename.encode())
         
         self.logger.info('Sending file')
         with open(filepath, 'rb') as f:
-            while data := f.read(1024):
-                client_socket.send(data)
-        
+            f_partitions , last_partition_size = get_partitions(file_size)
+            for _ in range(f_partitions):
+                client_socket.send(f.read(MSJ_SIZE))
+            client_socket.send(f.read(last_partition_size))
+
         # TODO: Check if we can/should handle a server response after file was sent
         # logger.info('Waiting for server response')
         # response = client_socket.recv(1024)

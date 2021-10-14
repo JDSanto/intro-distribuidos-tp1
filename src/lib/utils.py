@@ -8,6 +8,9 @@ DEFAULT_PORT = 8081
 DEFAULT_SRC = './'
 DEFAULT_DEST = 'lib/bucket'
 VERBOSITY = {1: logging.DEBUG, 2: logging.INFO, 3: logging.ERROR}
+INT_SIZE = 4
+CHAR_SIZE = 1
+MSJ_SIZE = 1024
 
 class Command(Enum):
     UPLOAD = 'u'
@@ -68,3 +71,7 @@ def validate_args(args):
         #     raise Exception(f'File {args.filename} not found')
         pass
     return args
+
+def get_partitions(file_size):
+    return file_size // MSJ_SIZE, file_size % MSJ_SIZE
+            

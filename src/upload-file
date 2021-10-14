@@ -14,5 +14,7 @@ if __name__ == "__main__":
     client = TCPClient(args.port, args.filename, logger)
     logger.info('Starting File Transfer App with TCP...')
     client.transfer_file(args.src)
+    
+    # Validate if file was received
     logger.info('File transfer complete')
 
