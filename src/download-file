@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
-from lib.client import TCPClient
-from lib.utils import parse_download_file   
+from lib.client import TCPClient, UDPClient
+from lib.utils import parse_download_file, Protocol
 import logging
 
 if __name__ == "__main__":
@@ -10,8 +10,13 @@ if __name__ == "__main__":
     logging.basicConfig(level=args.verbose, format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y/%m/%d %H:%M:%S')
     logger = logging.getLogger(__name__)
 
-    client = TCPClient(args.port, args.filename, logger)
-    logger.info('Starting File Transfer App with TCP')
+    if args.protocol == Protocol.TCP:
+        client = TCPClient(args.port, args.filename, logger)
+        logger.info('Starting File Transfer App with TCP...')
+    elif args.protocol == Protocol.UDP:
+        client = UDPClient(args.port, args.filename, logger)
+        logger.info('Starting File Transfer App with UDP...')
+
     client.download_file(args.dst)
     logger.info('File transfer complete')
 

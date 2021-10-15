@@ -10,11 +10,19 @@ DEFAULT_DEST = 'lib/bucket'
 VERBOSITY = {1: logging.DEBUG, 2: logging.INFO, 3: logging.ERROR}
 INT_SIZE = 4
 CHAR_SIZE = 1
-MSJ_SIZE = 1024
+MSG_SIZE = 1024
 
 class Command(Enum):
     UPLOAD = 'u'
     DOWNLOAD = 'd'
+
+
+class Protocol(Enum):
+    UDP = 'udp'
+    TCP = 'tcp'
+
+    def __str__(self):
+        return self.value
 
 
 def parse_args():
@@ -28,6 +36,8 @@ def parse_args():
         '-H', '--host', help='server IP address', dest='host', type=str, action='store')
     parser.add_argument(
         '-p', '--port', help='server port', dest='port', type=int, action='store')
+    parser.add_argument(
+        '-P', '--protocol', help='protocol to use', dest='protocol', type=Protocol, choices=list(Protocol), default=Protocol.TCP)
     
     return parser
     
@@ -79,12 +89,12 @@ def validate_args(args):
 
 def send_file(socket, file, file_size):
     while file_size > 0:
-        data = file.read(min(MSJ_SIZE, file_size))
+        data = file.read(min(MSG_SIZE, file_size))
         socket.send(data)
         file_size -= len(data)
 
 def receive_file(socket, file, file_size):
     while file_size > 0:
-        data = socket.recv(min(MSJ_SIZE, file_size))
+        data = socket.recv(min(MSG_SIZE, file_size))
         file.write(data)
         file_size -= len(data)
