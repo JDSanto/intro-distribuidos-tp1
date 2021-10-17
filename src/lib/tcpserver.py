@@ -8,6 +8,7 @@ from lib import utils
 class TCPServer(Server):
     def start_server(self):
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.server_socket.bind(("", self.port))
         self.server_socket.listen(0)
         self.logger.info("The server is ready to receive")
@@ -15,7 +16,7 @@ class TCPServer(Server):
         # TODO: multithreading
         while True:
             connection_socket, addr = self.server_socket.accept()
-            command = utils.Command(connection_socket.recv(1).decode())
+            command = utils.Command(connection_socket.recv(1))
 
             if command == utils.Command.UPLOAD:
                 self.receive_file(connection_socket)
@@ -42,13 +43,15 @@ class TCPServer(Server):
 
         self.logger.info(f"Finished uploading: {filename}")
 
+        connection_socket.send(utils.Status.OK.value)
+
     def send_file(self, connection_socket):
         # Recieve filename size
         filename_size = int.from_bytes(connection_socket.recv(utils.INT_SIZE), "big")
 
         # Recieve filename
         filename = connection_socket.recv(filename_size).decode()
-        self.logger.info(f"Receiving file: {filename}")
+        self.logger.info(f"Receiving filename: {filename}")
 
         # Send file size
         file_size = os.path.getsize(os.path.join(self.dest_folder, filename))
@@ -60,9 +63,14 @@ class TCPServer(Server):
         with open(os.path.join(self.dest_folder, filename), "rb") as f:
             utils.send_file(connection_socket, f, file_size)
 
+        self.logger.info('Waiting for client response')
+        response = connection_socket.recv(1)
+        if response == utils.Status.ERROR.value:
+            self.logger.error('File transfer failed')
+        else:
+            self.logger.info("File transfered")
         self.logger.info(f"Finished sending: {filename}")
         connection_socket.close()
 
     def stop_server(self):
-        # self.server_socket.shutdown(socket.SHUT_RDWR)
         self.server_socket.close()

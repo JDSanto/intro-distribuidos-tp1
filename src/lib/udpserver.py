@@ -8,12 +8,13 @@ from lib import utils
 class UDPServer(Server):
     def start_server(self):
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.server_socket.bind(("", self.port))
 
         # TODO: multithreading (a bit harder in UDP)
         while True:
             message, addr = self.server_socket.recvfrom(1)
-            command = utils.Command(message.decode())
+            command = utils.Command(message)
 
             # TODO: set a unique socket for the incoming connection
             if command == utils.Command.UPLOAD:
@@ -48,9 +49,10 @@ class UDPServer(Server):
                 data = self.server_socket.recvfrom(min(utils.MSG_SIZE, file_size))[0]
                 f.write(data)
                 file_size -= len(data)
-            # utils.receive_file(connection_socket, f, file_size)
 
         self.logger.info(f"Finished uploading: {filename}")
+
+        self.server_socket.sendto(utils.Status.OK.value, addr)
 
     def send_file(self, addr):
         # Recieve filename size
@@ -78,6 +80,13 @@ class UDPServer(Server):
                 file_size -= len(data)
 
         self.logger.info(f"Finished sending: {filename}")
+        self.logger.info('Waiting for client response')
+        response, _ = self.server_socket.recvfrom(1)
+        if response == utils.Status.ERROR.value:
+            self.logger.error('File transfer failed')
+        else:
+            self.logger.info("File transfered")
+
 
     def stop_server(self):
         # self.server_socket.shutdown(socket.SHUT_RDWR)

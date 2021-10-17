@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+import signal
 import logging
 import traceback
 
@@ -6,11 +7,21 @@ from lib.tcpserver import TCPServer
 from lib.udpserver import UDPServer
 from lib.utils import parse_server_start, Protocol
 
+class SigException(Exception):
+    pass
+
+def sig_handler(sig, frame):
+    raise SigException()
+
+
 if __name__ == "__main__":
+    signal.signal(signal.SIGINT, sig_handler)
+    signal.signal(signal.SIGTERM, sig_handler)
+
     args = parse_server_start()
     logging.basicConfig(
         level=args.verbose,
-        format="%(asctime)s - [%(levelname)s] - %(message)s",
+        format="%(asctime)s - [server %(levelname)s] - %(message)s",
         datefmt="%Y/%m/%d %H:%M:%S",
     )
     logger = logging.getLogger(__name__)
@@ -24,7 +35,10 @@ if __name__ == "__main__":
 
     try:
         server.start_server()
+    except SigException:
+        logger.info("Got signal. Exiting server...")
     except:
+        traceback.print_exc()
+    finally:
         logger.info("Stopping server...")
         server.stop_server()
-        traceback.print_exc()

@@ -20,7 +20,7 @@ class UDPClient(Client):
         # Send the command to the server
         self.logger.info("Sending UPLOAD command")
         client_socket.sendto(
-            utils.Command.UPLOAD.value.encode(), (self.host, self.port)
+            utils.Command.UPLOAD.value, (self.host, self.port)
         )
 
         # Send the filename size and the file size
@@ -45,13 +45,13 @@ class UDPClient(Client):
             while data := f.read(utils.MSG_SIZE):
                 client_socket.sendto(data, (self.host, self.port))
 
-        # TODO: Check if we can/should handle a server response after file was sent
-        # logger.info('Waiting for server response')
-        # response = client_socket.recv(1024)
-        # if response == b'ERROR':
-        #     logger.error('File does not exist')
+        self.logger.info('Waiting for server response')
+        response = client_socket.recvfrom(1)
+        if response == utils.Status.ERROR.value:
+            self.logger.error('File transfer failed')
+        else:
+            self.logger.info("File uploaded")
 
-        self.logger.info("File uploaded")
         client_socket.close()
 
     def download_file(self, dest_folder):
@@ -64,7 +64,7 @@ class UDPClient(Client):
         # Send the command to the server
         self.logger.info(f"Sending DOWNLOAD command")
         client_socket.sendto(
-            utils.Command.DOWNLOAD.value.encode(), (self.host, self.port)
+            utils.Command.DOWNLOAD.value, (self.host, self.port)
         )
 
         # Send the filename size
@@ -91,4 +91,5 @@ class UDPClient(Client):
                 file_size -= len(data)
 
         self.logger.info("File downloaded")
+        client_socket.sendto(utils.Status.OK.value, (self.host, self.port))
         client_socket.close()

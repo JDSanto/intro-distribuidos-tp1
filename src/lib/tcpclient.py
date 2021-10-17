@@ -28,12 +28,11 @@ class TCPClient(Client):
 
         # Send the command to the server
         self.logger.info("Sending UPLOAD command")
-        client_socket.send(utils.Command.UPLOAD.value.encode())
+        client_socket.send(utils.Command.UPLOAD.value)
 
         # Send the filename size and the file size
         self.logger.info("Sending File size")
         file_size = os.path.getsize(filepath)
-        print(file_size)
         filename_size = len(self.filename)
         client_socket.send(file_size.to_bytes(utils.INT_SIZE, byteorder="big"))
         client_socket.send(filename_size.to_bytes(utils.INT_SIZE, byteorder="big"))
@@ -47,13 +46,14 @@ class TCPClient(Client):
         with open(filepath, "rb") as f:
             utils.send_file(client_socket, f, file_size)
 
-        # TODO: Check if we can/should handle a server response after file was sent
-        # logger.info('Waiting for server response')
-        # response = client_socket.recv(1024)
-        # if response == b'ERROR':
-        #     logger.error('File does not exist')
+        self.logger.info('Waiting for server response')
+        response = client_socket.recv(1)
+        if response == utils.Status.ERROR.value:
+            self.logger.error('File transfer failed')
+        else:
+            self.logger.info("File uploaded")
 
-        self.logger.info("File uploaded")
+        client_socket.shutdown(socket.SHUT_RDWR)
         client_socket.close()
 
     def download_file(self, dest_folder):
@@ -68,7 +68,7 @@ class TCPClient(Client):
 
         # Send the command to the server
         self.logger.info(f"Sending DOWNLOAD command")
-        client_socket.send(utils.Command.DOWNLOAD.value.encode())
+        client_socket.send(utils.Command.DOWNLOAD.value)
 
         # Send the filename size
         self.logger.info("Sending File size")
@@ -88,4 +88,6 @@ class TCPClient(Client):
             utils.receive_file(client_socket, f, file_size)
 
         self.logger.info("File downloaded")
+        client_socket.send(utils.Status.OK.value)
+        client_socket.shutdown(socket.SHUT_RDWR)
         client_socket.close()

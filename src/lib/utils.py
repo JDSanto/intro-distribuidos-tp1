@@ -14,8 +14,13 @@ MSG_SIZE = 1024
 
 
 class Command(Enum):
-    UPLOAD = "u"
-    DOWNLOAD = "d"
+    UPLOAD = b"u"
+    DOWNLOAD = b"d"
+
+
+class Status(Enum):
+    OK = b"o"
+    ERROR = b"e"
 
 
 class Protocol(Enum):
@@ -45,7 +50,13 @@ def parse_args():
         "-H", "--host", help="server IP address", dest="host", type=str, action="store"
     )
     parser.add_argument(
-        "-p", "--port", help="server port", dest="port", type=int, action="store"
+        "-p",
+        "--port",
+        help="server port",
+        dest="port",
+        type=int,
+        action="store",
+        default=DEFAULT_PORT,
     )
     parser.add_argument(
         "-P",
