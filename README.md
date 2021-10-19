@@ -1,22 +1,28 @@
 
 # Usage
 
-> TODO: Sacado del enunciado. Cambiarlo también en el programa y actualizarlo acá.
-
 ## Start server
 
 ```
 > cd src
-> python start-server -h
-usage: start-server [- h] [- v | -q] [- H ADDR] [- p PORT] [- s DIRPATH]
+> python start-server -h    
+usage: start-server [-h] [-v {1,2,3}] [-q] [-H HOST] [-p PORT] [-P {udp,tcp}] -s DEST [--name FILENAME]
+
+Parse flags for File Transfer App
 
 optional arguments:
--h, -- help     show this help message and exit
--v, -- verbose  increase output verbosity
--q, -- quiet    decrease output verbosity
--H, -- host     service IP address
--p, -- port     service port
--s, --storage   storage dir path
+  -h, --help            show this help message and exit
+  -v {1,2,3}, --verbose {1,2,3}
+                        increase output verbosity
+  -q, --quiet           decrease output verbosity
+  -H HOST, --host HOST  server IP address
+  -p PORT, --port PORT  server port
+  -P {udp,tcp}, --protocol {udp,tcp}
+                        protocol to use
+  -s DEST, --storage DEST
+                        storage dir path
+  --name FILENAME
+
 ```
 
 ## Start client
@@ -26,28 +32,53 @@ optional arguments:
 ```
 > cd src
 > python upload-file -h
-usage: file-upload [-h] [-v | -q] [-H ADDR] [-p PORT] [-s FILEPATH] [-n FILENAME]
+usage: upload-file [-h] [-v {1,2,3}] [-q] [-H HOST] [-p PORT] [-P {udp,tcp}] -s SRC -n FILENAME
 
--h, --help      show this help message and exit
--v, --verbose   increase output verbosity
--q, --quiet     decrease output verbosity
--H, --host      server IP address
--p, --port      server port
--s, --src       source file path
--n, --name      file name
+Parse flags for File Transfer App
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -v {1,2,3}, --verbose {1,2,3}
+                        increase output verbosity
+  -q, --quiet           decrease output verbosity
+  -H HOST, --host HOST  server IP address
+  -p PORT, --port PORT  server port
+  -P {udp,tcp}, --protocol {udp,tcp}
+                        protocol to use
+  -s SRC, --src SRC     source file path
+  -n FILENAME, --name FILENAME
+                        file name
 ```
 
 ### Download file
 ```
 > cd src
 > python download-file -h
-usage: download-file [-h] [-v | -q] [-H ADDR] [-p PORT] [-d FILEPATH] [-n FILENAME]
+usage: download-file [-h] [-v {1,2,3}] [-q] [-H HOST] [-p PORT] [-P {udp,tcp}] -d DST [-n FILENAME]
 
--h, --help      show this help message and exit
--v, --verbose   increase output verbosity
--q, --quiet     decrease output verbosity
--H, --host      server IP address
--p, --port      server port
--d, --dst       destination file path
--n, --name      file name
+Parse flags for File Transfer App
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -v {1,2,3}, --verbose {1,2,3}
+                        increase output verbosity
+  -q, --quiet           decrease output verbosity
+  -H HOST, --host HOST  server IP address
+  -p PORT, --port PORT  server port
+  -P {udp,tcp}, --protocol {udp,tcp}
+                        protocol to use
+  -d DST, --dst DST     Destination file path
+  -n FILENAME, --name FILENAME
+                        filename
 ```
+
+## Run tests
+
+Automated tests for running the server with the upload/download commands (tested on linux only). `-v` for printing program output.
+```
+bash test-connection.sh <protocol> [-v]
+```
+
+## comcast
+
+For testing weak or unreliable connections, check out [comcast](https://github.com/Comcast)

@@ -2,7 +2,6 @@
 
 TEST_FILE=test.txt
 TEST_BUCKET_NAME=test-bucket
-TEST_FILE_CHECKSUM=""
 
 STD_REDDIR='/dev/null'
 
@@ -18,7 +17,7 @@ start_server() {
     # starts the server, sets the server PID
     python src/start-server -P $1 -s $TEST_BUCKET_NAME >"$STD_REDDIR" 2>&1 &
     SERVER_PID=$!
-    sleep 0.1
+    sleep 0.2
 }
 
 stop_server() {
@@ -27,10 +26,6 @@ stop_server() {
     SERVER_PID=0
 }
 
-get_checksum() {
-    # gets the checksum of the file
-    echo $(sha256sum $1 | cut -d ' ' -f 1)
-}
 
 check_server_status() {
     # exits the program if the last background job exited
@@ -45,13 +40,7 @@ check_server_status() {
 
 generate_file() {
     # generates a file with $1 characters
-    # and stores its checksum 
-
-    # generate file
     head -c $1 /dev/urandom > $TEST_FILE
-
-    # get checksum and store it to the variable TEST_FILE_CHECKSUM
-    TEST_FILE_CHECKSUM=$(get_checksum $TEST_FILE)
 }
 
 client_upload_file() {
@@ -61,12 +50,12 @@ client_upload_file() {
         ERROR=1
     fi
 
-    RESULT_CHECKSUM=$(get_checksum $TEST_BUCKET_NAME/$TEST_FILE)
-
-    if [ $TEST_FILE_CHECKSUM != $RESULT_CHECKSUM ]; then
-        echo "ERROR: Checksum mismatch"
+    diff $TEST_FILE $TEST_BUCKET_NAME/$TEST_FILE >/dev/null 2>&1
+    if [ $? -ne 0 ]; then
+        echo "ERROR: Files differ."
         ERROR=1
     fi
+    sleep 0.1
 }
 
 client_download_file() {
@@ -75,11 +64,12 @@ client_download_file() {
         echo "ERROR: Client exited unexpectedly"
     fi
 
-    RESULT_CHECKSUM=$(get_checksum $TEST_FILE)
-
-    if [ $TEST_FILE_CHECKSUM != $RESULT_CHECKSUM ]; then
-        echo "ERROR: Checksum mismatch."
+    diff $TEST_FILE $TEST_BUCKET_NAME/$TEST_FILE >/dev/null 2>&1
+    if [ $? -ne 0 ]; then
+        echo "ERROR: Files differ."
+        ERROR=1
     fi
+    sleep 0.1
 }
 
 
@@ -113,7 +103,7 @@ test_system() {
         echo "OK"
     else
         echo "FAIL"
-        exit 1
+        return 1
     fi
 }
 
@@ -128,7 +118,10 @@ if [ "$2" == '-v' ]; then
     STD_REDDIR='/dev/tty'
 fi
 
-for i in 100 1000 10000 100000 1000000 10000000 50000000; do
+for i in 100 500 1000 5000 10000 100000 500000; do
     test_system $1 $i
     sleep 0.25
+    if [ $ERROR -ne 0 ]; then
+        break
+    fi
 done

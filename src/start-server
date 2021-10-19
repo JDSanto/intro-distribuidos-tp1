@@ -2,23 +2,99 @@
 import signal
 import logging
 import traceback
+import os
 
 from lib.tcpserver import TCPServer
 from lib.udpserver import UDPServer
-from lib.utils import parse_server_start, Protocol
+from lib import utils
+
 
 class SigException(Exception):
     pass
 
+
 def sig_handler(sig, frame):
     raise SigException()
+
+
+def receive_file(socket, dest_folder, logger):
+    if not os.path.isdir(dest_folder):
+        logger.info(f"Creating destination folder: {dest_folder}")
+        os.makedirs(dest_folder)
+
+    # Recieve filename size and file size
+    file_size = int.from_bytes(socket.receive_data(utils.INT_SIZE), "big")
+    filename_size = int.from_bytes(socket.receive_data(utils.INT_SIZE), "big")
+
+    # Recieve filename
+    filename = socket.receive_data(filename_size).decode()
+    logger.info(f"Receiving file: {filename}")
+
+    # Recieve file
+    with open(os.path.join(dest_folder, filename), "wb") as f:
+        while file_size > 0:
+            data = socket.receive_data(min(utils.MSG_SIZE, file_size))
+            f.write(data)
+            file_size -= len(data)
+
+    logger.info(f"Finished uploading: {filename}")
+    socket.send_data(utils.Status.OK.value)
+
+
+def send_file(socket, dest_folder, logger):
+    # Recieve filename size
+    filename_size = int.from_bytes(socket.receive_data(utils.INT_SIZE), "big")
+
+    # Recieve filename
+    filename = socket.receive_data(filename_size).decode()
+    logger.info(f"Receiving filename: {filename}")
+
+    # Send file size
+    file_size = os.path.getsize(os.path.join(dest_folder, filename))
+    socket.send_data(file_size.to_bytes(utils.INT_SIZE, byteorder="big"))
+
+    # Send file
+    # TODO: check if file exists, send error if it doesn't
+    logger.info("Sending file")
+    with open(os.path.join(dest_folder, filename), "rb") as f:
+        while file_size > 0:
+            msg_size = min(utils.MSG_SIZE, file_size)
+            data = f.read(msg_size)
+            socket.send_data(data)
+            file_size -= len(data)
+
+    logger.info("Waiting for client response")
+    response = socket.receive_data(1)
+    if response == utils.Status.ERROR.value:
+        logger.error("File transfer failed")
+    else:
+        logger.info("File transfered")
+    logger.info(f"Finished sending: {filename}")
+
+
+def start_server(server, dest_folder, logger):
+    server.start()
+
+    while True:
+
+        socket = server.wait_for_connection()
+        command = utils.Command(socket.receive_data(1))
+
+        # TODO: Reenable multithreading when UDP allows multiple connections
+        if command == utils.Command.UPLOAD:
+            receive_file(socket, dest_folder, logger)
+            # threading.Thread(target=receive_file, args=(socket, dest_folder, logger)).start()
+
+        if command == utils.Command.DOWNLOAD:
+            send_file(socket, dest_folder, logger)
+            # threading.Thread(target=send_file, args=(socket, dest_folder, logger)).start()
 
 
 if __name__ == "__main__":
     signal.signal(signal.SIGINT, sig_handler)
     signal.signal(signal.SIGTERM, sig_handler)
 
-    args = parse_server_start()
+    args = utils.parse_server_start()
     logging.basicConfig(
         level=args.verbose,
         format="%(asctime)s - [server %(levelname)s] - %(message)s",
@@ -26,15 +102,15 @@ if __name__ == "__main__":
     )
     logger = logging.getLogger(__name__)
 
-    if args.protocol == Protocol.TCP:
+    if args.protocol == utils.Protocol.TCP:
         server = TCPServer("localhost", args.port, args.dest, logger)
         logger.info("Starting TCP server...")
-    elif args.protocol == Protocol.UDP:
+    elif args.protocol == utils.Protocol.UDP:
         server = UDPServer("localhost", args.port, args.dest, logger)
         logger.info("Starting UDP server...")
 
     try:
-        server.start_server()
+        start_server(server, args.dest, logger)
     except SigException:
         logger.info("Got signal. Exiting server...")
     except:

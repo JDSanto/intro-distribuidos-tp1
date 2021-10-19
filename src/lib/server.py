@@ -14,7 +14,7 @@ class Server:
         self.dest_folder = dest_folder
         self.logger = logger
 
-    def start_server(self):
+    def start(self):
         """
         Starts the server, which will wait and process client connections
         and requests.

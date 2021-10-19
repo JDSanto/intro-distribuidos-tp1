@@ -1,13 +1,50 @@
 #!/usr/bin/python3
 
-from lib.tcpclient import TCPClient
-from lib.udpclient import UDPClient
-from lib.utils import parse_download_file, Protocol
+from lib.tcpsocket import TCPSocket
+from lib.udpsocket import UDPSocket
+from lib import utils
 import logging
+import os
+
+
+def download_file(socket, filename, dest_folder, logger):
+    if not os.path.isdir(dest_folder):
+        logger.info(f"Creating destination folder: {dest_folder}")
+        os.makedirs(dest_folder)
+
+    # Send the command to the server
+    logger.info(f"Sending DOWNLOAD command")
+    socket.send_data(utils.Command.DOWNLOAD.value)
+
+    # Send the filename size
+    logger.info("Sending File size")
+    filename_size = len(filename)
+    socket.send_data(filename_size.to_bytes(utils.INT_SIZE, byteorder="big"))
+
+    # Send filename
+    logger.info(f"Sending filename: {filename}")
+    socket.send_data(filename.encode())
+
+    # Recieve the file size
+    file_size = int.from_bytes(socket.receive_data(utils.INT_SIZE), "big")
+
+    # Recieve the file
+    logger.info("Downloading file")
+    with open(os.path.join(dest_folder, filename), "wb") as f:
+        while file_size > 0:
+            data = socket.receive_data(min(utils.MSG_SIZE, file_size))
+            f.write(data)
+            file_size -= len(data)
+
+    logger.info("File downloaded")
+    socket.send_data(utils.Status.OK.value)
+
+    socket.close()
+
 
 if __name__ == "__main__":
 
-    args = parse_download_file()
+    args = utils.parse_download_file()
     logging.basicConfig(
         level=args.verbose,
         format="%(asctime)s - [download %(levelname)s] - %(message)s",
@@ -15,12 +52,12 @@ if __name__ == "__main__":
     )
     logger = logging.getLogger(__name__)
 
-    if args.protocol == Protocol.TCP:
-        client = TCPClient(args.port, args.filename, logger)
+    if args.protocol == utils.Protocol.TCP:
+        client = TCPSocket.connect("localhost", args.port)
         logger.info("Starting File Transfer App with TCP...")
-    elif args.protocol == Protocol.UDP:
-        client = UDPClient(args.port, args.filename, logger)
+    elif args.protocol == utils.Protocol.UDP:
+        client = UDPSocket.connect("localhost", args.port)
         logger.info("Starting File Transfer App with UDP...")
 
-    client.download_file(args.dst)
+    download_file(client, args.filename, args.dst, logger)
     logger.info("File transfer complete")

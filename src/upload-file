@@ -1,14 +1,57 @@
 #!/usr/bin/python3
 
-from lib.tcpclient import TCPClient
-from lib.udpclient import UDPClient
-from lib.utils import parse_upload_file, Protocol
+from lib import utils
+from lib.tcpsocket import TCPSocket
+from lib.udpsocket import UDPSocket
+
 import logging
 import os
 
+
+def upload_file(socket, filename, filedir, logger):
+    filepath = os.path.join(filedir, filename)
+    if not os.path.isfile(filepath):
+        logger.error(f"The file {filepath} does not exist")
+        return
+
+    # Send the command to the server
+    logger.info("Sending UPLOAD command")
+    socket.send_data(utils.Command.UPLOAD.value)
+
+    # Send the filename size and the file size
+    logger.info("Sending File size")
+    file_size = os.path.getsize(filepath)
+    filename_size = len(filename)
+    socket.send_data(file_size.to_bytes(utils.INT_SIZE, byteorder="big"))
+
+    socket.send_data(filename_size.to_bytes(utils.INT_SIZE, byteorder="big"))
+
+    # Send the filename
+    logger.info(f"Sending filename: {filename}")
+    socket.send_data(filename.encode())
+
+    # Send the file
+    logger.info("Sending file")
+    with open(filepath, "rb") as f:
+        while file_size > 0:
+            msg_size = min(utils.MSG_SIZE, file_size)
+            data = f.read(msg_size)
+            socket.send_data(data)
+            file_size -= len(data)
+
+    logger.info("Waiting for server response")
+    response = socket.receive_data(1)
+    if response == utils.Status.ERROR.value:
+        logger.error("File transfer failed")
+    else:
+        logger.info("File uploaded")
+
+    socket.close()
+
+
 if __name__ == "__main__":
 
-    args = parse_upload_file()
+    args = utils.parse_upload_file()
     logging.basicConfig(
         level=args.verbose,
         format="%(asctime)s - [upload %(levelname)s] - %(message)s",
@@ -16,12 +59,13 @@ if __name__ == "__main__":
     )
     logger = logging.getLogger(__name__)
 
-    if args.protocol == Protocol.TCP:
-        client = TCPClient(args.port, args.filename, logger)
+    if args.protocol == utils.Protocol.TCP:
+        client = TCPSocket.connect("localhost", args.port)
         logger.info("Starting File Transfer App with TCP...")
-    elif args.protocol == Protocol.UDP:
-        client = UDPClient(args.port, args.filename, logger)
+    elif args.protocol == utils.Protocol.UDP:
+        client = UDPSocket.connect("localhost", args.port)
         logger.info("Starting File Transfer App with UDP...")
 
-    client.transfer_file(args.src)
+    upload_file(client, args.filename, args.src, logger)
+
     logger.info("File transfer complete")

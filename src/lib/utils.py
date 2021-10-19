@@ -1,6 +1,5 @@
 import argparse
 import logging
-import os
 from enum import Enum
 
 DEFAULT_HOST = ""
@@ -146,16 +145,3 @@ def validate_args(args):
         pass
     return args
 
-
-def send_file(socket, file, file_size):
-    while file_size > 0:
-        data = file.read(min(MSG_SIZE, file_size))
-        socket.send(data)
-        file_size -= len(data)
-
-
-def receive_file(socket, file, file_size):
-    while file_size > 0:
-        data = socket.recv(min(MSG_SIZE, file_size))
-        file.write(data)
-        file_size -= len(data)
