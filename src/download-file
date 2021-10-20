@@ -53,10 +53,10 @@ if __name__ == "__main__":
     logger = logging.getLogger(__name__)
 
     if args.protocol == utils.Protocol.TCP:
-        client = TCPSocket.connect("localhost", args.port)
+        client = TCPSocket.connect("localhost", args.port, logger)
         logger.info("Starting File Transfer App with TCP...")
     elif args.protocol == utils.Protocol.UDP:
-        client = UDPSocket.connect("localhost", args.port)
+        client = UDPSocket.connect("localhost", args.port, logger)
         logger.info("Starting File Transfer App with UDP...")
 
     download_file(client, args.filename, args.dst, logger)

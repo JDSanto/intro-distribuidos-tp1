@@ -15,7 +15,7 @@ class TCPServer(Server):
 
     def wait_for_connection(self):
         connection_socket, addr = self.server_socket.accept()
-        return TCPSocket(connection_socket, addr)
+        return TCPSocket(connection_socket, addr, self.logger)
 
     def stop_server(self):
         self.server_socket.close()

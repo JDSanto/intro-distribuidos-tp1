@@ -103,10 +103,10 @@ if __name__ == "__main__":
     logger = logging.getLogger(__name__)
 
     if args.protocol == utils.Protocol.TCP:
-        server = TCPServer("localhost", args.port, args.dest, logger)
+        server = TCPServer("localhost", args.port, logger)
         logger.info("Starting TCP server...")
     elif args.protocol == utils.Protocol.UDP:
-        server = UDPServer("localhost", args.port, args.dest, logger)
+        server = UDPServer("localhost", args.port, logger)
         logger.info("Starting UDP server...")
 
     try:

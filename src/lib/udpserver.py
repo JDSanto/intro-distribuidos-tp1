@@ -14,7 +14,7 @@ class UDPServer(Server):
 
     def wait_for_connection(self):
         _, addr = self.server_socket.recvfrom(1)
-        return UDPSocket(self.server_socket, addr)
+        return UDPSocket(self.server_socket, addr, self.logger)
 
     def stop(self):
         self.server_socket.close()

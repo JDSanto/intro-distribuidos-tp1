@@ -6,9 +6,9 @@ from lib.socket import Socket
 class UDPSocket(Socket):
 
     @staticmethod
-    def connect(host, port):
+    def connect(host, port, logger):
         conn_socet = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        udpsocket = UDPSocket(conn_socet, (host, port))
+        udpsocket = UDPSocket(conn_socet, (host, port), logger)
 
         # "handshake" to create the UDSocket on the server-side
         # with the client's address
