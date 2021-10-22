@@ -45,9 +45,11 @@ def download_file(socket, filename, dest_folder, logger):
 if __name__ == "__main__":
 
     args = utils.parse_download_file()
+    GREEN = "\033[1;32m"
+    NC = "\033[0m"
     logging.basicConfig(
         level=args.verbose,
-        format="%(asctime)s - [download %(levelname)s] - %(message)s",
+        format=f"%(asctime)s - [{GREEN}download{NC} %(levelname)s] - %(message)s",
         datefmt="%Y/%m/%d %H:%M:%S",
     )
     logger = logging.getLogger(__name__)

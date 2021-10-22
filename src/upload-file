@@ -52,9 +52,11 @@ def upload_file(socket, filename, filedir, logger):
 if __name__ == "__main__":
 
     args = utils.parse_upload_file()
+    BLUE = '\033[94m'
+    NC = '\033[0m'
     logging.basicConfig(
         level=args.verbose,
-        format="%(asctime)s - [upload %(levelname)s] - %(message)s",
+        format=f"%(asctime)s - [{BLUE}upload{NC} %(levelname)s] - %(message)s",
         datefmt="%Y/%m/%d %H:%M:%S",
     )
     logger = logging.getLogger(__name__)

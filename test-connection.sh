@@ -44,7 +44,8 @@ generate_file() {
 }
 
 client_upload_file() {
-    python src/upload-file -P $1 -s . -n $TEST_FILE >"$STD_REDDIR" 2>&1
+    python src/upload-file -P $1 -s . -n $TEST_FILE >"$STD_REDDIR" 2>&1 &
+    wait $!
     if [ $? -ne 0 ]; then
         echo "ERROR: Client exited unexpectedly"
         ERROR=1
@@ -55,11 +56,12 @@ client_upload_file() {
         echo "ERROR: Files differ."
         ERROR=1
     fi
-    sleep 0.1
+    sleep 1
 }
 
 client_download_file() {
-    python src/download-file -P $1 -d . -n $TEST_FILE >"$STD_REDDIR" 2>&1
+    python src/download-file -P $1 -d . -n $TEST_FILE >"$STD_REDDIR" 2>&1 &
+    wait $!
     if [ $? -ne 0 ]; then
         echo "ERROR: Client exited unexpectedly"
     fi
@@ -69,7 +71,13 @@ client_download_file() {
         echo "ERROR: Files differ."
         ERROR=1
     fi
-    sleep 0.1
+    sleep 1
+}
+
+
+kill_system() {
+    jobs -p | xargs kill -9
+    exit 1
 }
 
 
@@ -106,6 +114,8 @@ test_system() {
         return 1
     fi
 }
+
+trap kill_system SIGINT
 
 
 if [ "$#" == 0 ]; then

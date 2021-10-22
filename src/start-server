@@ -2,6 +2,7 @@
 import signal
 import logging
 import traceback
+import threading
 import os
 
 from lib.tcpserver import TCPServer
@@ -95,9 +96,11 @@ if __name__ == "__main__":
     signal.signal(signal.SIGTERM, sig_handler)
 
     args = utils.parse_server_start()
+    ORANGE = '\033[0;33m'
+    NC = '\033[0m'
     logging.basicConfig(
         level=args.verbose,
-        format="%(asctime)s - [server %(levelname)s] - %(message)s",
+        format=f"%(asctime)s - [{ORANGE}server{NC} %(levelname)s] - %(message)s",
         datefmt="%Y/%m/%d %H:%M:%S",
     )
     logger = logging.getLogger(__name__)
