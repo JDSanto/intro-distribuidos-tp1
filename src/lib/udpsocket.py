@@ -93,7 +93,7 @@ class UDPSocket(Socket):
         port = int.from_bytes(pkt.data, byteorder="big")
         self.addr = (self.addr[0], port)
         self.logger.debug(f'handshake done. port={port} bytes={pkt.data}')
-        self.send_ack()
+        self.send_ack(self.seq_number)
 
 
     # Send methods
@@ -102,11 +102,13 @@ class UDPSocket(Socket):
         Send data with headers through the socket
         """
         # FIXME: name plz
+        self.logger.debug(f'trying to send package {self.seq_number}')
         pkt = UDPSegment.pack(data, self.seq_number).to_bytes()
         self.conn_socket.sendto(pkt, self.addr)
 
-    def send_ack(self):
-        pkt = UDPSegment.pack(b'', self.seq_number, ack=1).to_bytes()
+    def send_ack(self, seq_num):
+        self.logger.debug(f'trying to send ack {self.seq_number}')
+        pkt = UDPSegment.pack(b'', seq_num, ack=1).to_bytes()
         self.conn_socket.sendto(pkt, self.addr)
 
 
@@ -136,12 +138,16 @@ class UDPSocket(Socket):
 
     # Receive methods
     def receive_ack(self):
-        return self.receive_pkt(0)
+        self.logger.debug(f'trying to receive ack {self.seq_number}')
+        data, addr = self.conn_socket.recvfrom(UDPSegment.PADDING)
+        self.addr = addr
+        return UDPSegment.unpack(data)
 
     def receive_pkt(self, buffer_size):
         """
         Receive an UDPPackage through the socket
         """
+        self.logger.debug(f'trying to receiving package after {self.seq_number}')
         data, addr = self.conn_socket.recvfrom(buffer_size + UDPSegment.PADDING)
         self.addr = addr
         return UDPSegment.unpack(data)
@@ -161,14 +167,16 @@ class UDPSocket(Socket):
         # while not (pkt.seq_num == ((self.seq_number + 1) % 256) and not pkt.ack):
         while pkt.seq_num != ((self.seq_number + 1) % 256) or pkt.ack:
             try:
+                if not pkt.ack:
+                    self.send_ack(pkt.seq_num)
                 pkt = self.receive_pkt(buffer_size)
             except socket.timeout:
-                self.logger.debug('timeout on package. trying again')
+                self.logger.debug(f'timeout on package. trying again (self.seq_num={self.seq_number}, pkt.seq_num={pkt.seq_num})')
                 pass
 
         self.logger.debug(f'got package {pkt.seq_num}. sending ACK.')
         self.seq_number = pkt.seq_num
-        self.send_ack()
+        self.send_ack(self.seq_number)
         return pkt.data
 
     def close(self):
