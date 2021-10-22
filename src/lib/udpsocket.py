@@ -52,11 +52,14 @@ class UDPSegment():
 
 class UDPSocket(Socket):
 
+    TIMEOUT = 0.5
+    N_TRIES = 5
 
     def __init__(self, conn_socket, addr, logger):
         self.seq_number = 0
         self.remote_number = 0
-        conn_socket.settimeout(0.5)
+        self.tries = 0
+        conn_socket.settimeout(UDPSocket.TIMEOUT)
         super().__init__(conn_socket, addr, logger)
 
     @staticmethod
@@ -86,6 +89,7 @@ class UDPSocket(Socket):
             self.logger.debug(f'got invalid handshake. restarting')
             return self.handshake_server()
 
+        # FIXME: it's in the address from recvfrom
         port = int.from_bytes(pkt.data, byteorder="big")
         self.addr = (self.addr[0], port)
         self.logger.debug(f'handshake done. port={port} bytes={pkt.data}')
@@ -120,13 +124,17 @@ class UDPSocket(Socket):
         self.send_pkt(data)
         while True:
             try:
+                if self.tries == UDPSocket.N_TRIES:
+                    raise Exception("Connection lost")
                 pkt = self.receive_ack()
             except socket.timeout:
                 self.send_pkt(data)
                 if not retry:
-                    self.logger.debug(f'got timeout. aborting handshake')
+                    self.logger.debug(f'got timeout.')
                     raise socket.timeout
                 self.logger.debug(f'got timeout. resending seq_num {self.seq_number}')
+                self.tries += 1
+
                 continue
             if pkt.seq_num == self.seq_number and pkt.ack:
                 self.logger.debug(f'got ACK. ending')
@@ -134,6 +142,7 @@ class UDPSocket(Socket):
             self.logger.debug(f'old ack={pkt.ack}, {pkt.seq_num} != {self.seq_number} obtained. resending package')
             if not pkt.ack and pkt.seq_num <= self.remote_number:
                 self.send_ack(pkt.seq_num)
+        self.tries = 0
 
 
 
@@ -153,7 +162,6 @@ class UDPSocket(Socket):
         return UDPSegment.unpack(data)
 
 
-
     def receive_data(self, buffer_size):
         """
         Receive data through the socket, removing the headers
@@ -162,21 +170,29 @@ class UDPSocket(Socket):
         try:
             pkt = self.receive_pkt(buffer_size)
         except socket.timeout:
+            self.tries += 1
+            if self.tries == UDPSocket.N_TRIES:
+                raise Exception("Connection lost")
             return self.receive_data(buffer_size)
 
         # while not (pkt.seq_num == ((self.seq_number + 1) % 256) and not pkt.ack):
+        # FIXME: what happens if the packages arrive out of order
         while pkt.seq_num != ((self.remote_number + 1) % 256) or pkt.ack:
             try:
                 if not pkt.ack:
                     self.send_ack(pkt.seq_num)
                 pkt = self.receive_pkt(buffer_size)
             except socket.timeout:
+                self.tries += 1
+                if self.tries == UDPSocket.N_TRIES:
+                    raise Exception("Connection lost")
                 self.logger.debug(f'timeout on package. trying again (self.remote_number={self.remote_number}, pkt.seq_num={pkt.seq_num})')
                 pass
 
         self.logger.debug(f'got package {pkt.seq_num}. sending ACK.')
         self.remote_number = pkt.seq_num
         self.send_ack(self.remote_number)
+        self.tries = 0
         return pkt.data
 
     def close(self):

@@ -56,7 +56,7 @@ client_upload_file() {
         echo "ERROR: Files differ."
         ERROR=1
     fi
-    sleep 1
+    sleep 0.1
 }
 
 client_download_file() {
@@ -71,13 +71,12 @@ client_download_file() {
         echo "ERROR: Files differ."
         ERROR=1
     fi
-    sleep 1
+    sleep 0.1
 }
 
 
 kill_system() {
-    jobs -p | xargs kill -9
-    exit 1
+    jobs -p | xargs kill -9 >/dev/null 2>&1
 }
 
 
@@ -136,4 +135,11 @@ for i in 100 500 1000 5000 10000 100000 500000; do
     fi
 done
 
-kill_system || true
+kill_system
+
+if [ $ERROR -ne 0 ]; then
+    exit 1
+else
+    exit 0
+fi
+

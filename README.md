@@ -81,4 +81,4 @@ bash test-connection.sh <protocol> [-v]
 
 ## comcast
 
-For testing weak or unreliable connections, check out [comcast](https://github.com/Comcast)
+For testing weak or unreliable connections, check out [comcast](https://github.com/tylertreat/comcast)
