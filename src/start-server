@@ -73,22 +73,24 @@ def send_file(socket, dest_folder, logger):
     logger.info(f"Finished sending: {filename}")
 
 
+def handle_new_connection(socket, dest_folder, logger):
+    command = utils.Command(socket.receive_data(1))
+
+    if command == utils.Command.UPLOAD:
+        receive_file(socket, dest_folder, logger)
+
+    if command == utils.Command.DOWNLOAD:
+        send_file(socket, dest_folder, logger)
+
+
+
 def start_server(server, dest_folder, logger):
     server.start()
 
     while True:
-
         socket = server.wait_for_connection()
-        command = utils.Command(socket.receive_data(1))
+        threading.Thread(target=handle_new_connection, args=(socket, dest_folder, logger)).start()
 
-        # TODO: Reenable multithreading when UDP allows multiple connections
-        if command == utils.Command.UPLOAD:
-            receive_file(socket, dest_folder, logger)
-            # threading.Thread(target=receive_file, args=(socket, dest_folder, logger)).start()
-
-        if command == utils.Command.DOWNLOAD:
-            send_file(socket, dest_folder, logger)
-            # threading.Thread(target=send_file, args=(socket, dest_folder, logger)).start()
 
 
 if __name__ == "__main__":

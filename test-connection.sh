@@ -135,3 +135,5 @@ for i in 100 500 1000 5000 10000 100000 500000; do
         break
     fi
 done
+
+kill_system || true
