@@ -42,16 +42,11 @@ class UDPServerMT(Server):
         self.logger.info(f"The server is ready to receive at {self.port}")
         
         self.connections = {}
-        self.waiting = []
-        self.waitingCV = threading.Condition()
         self.txlock = threading.Lock()
-        self.stopped = threading.Event()
-                    
-        self.listen_thread = threading.Thread(target=self.listen)
-        self.listen_thread.start()
-    
-    def listen(self):
-        while not self.stopped.is_set():
+        self.stopped = False
+       
+    def wait_for_connection(self):
+        while not self.stopped:
             ready = select.select([self.server_socket], [], [], 1)
             if ready[0]:
                 data, addr = self.server_socket.recvfrom(MAX_DG_SIZE)
@@ -59,22 +54,11 @@ class UDPServerMT(Server):
                 if not addr in self.connections:
                     con = UDPSocket(addr, self)
                     self.connections[addr] = con
-                    with self.waitingCV:
-                        self.waiting.append(con)
-                        self.waitingCV.notify()
+                    return con
                 else:
                     self.connections[addr]._enqueue(data)
-    
-    def wait_for_connection(self):
-        def not_empty():
-            return len(self.waiting) > 0 or self.stopped.is_set()
-        
-        with self.waitingCV:
-            self.waitingCV.wait_for(not_empty)
-            if not self.stopped.is_set():
-                return self.waiting.pop(0)
-            else:
-                return None
+                    
+        return None
 
     def _send_data(self, addr, data):
         with self.txlock:
@@ -85,8 +69,5 @@ class UDPServerMT(Server):
 
     def stop_server(self):
         self.server_socket.close()
-        self.stopped.set()
-        with self.waitingCV:
-            self.waitingCV.notify()
-        self.listen_thread.join()
+        self.stopped = True
         
