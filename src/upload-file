@@ -6,6 +6,7 @@ from lib.udpsocket import UDPSocket
 
 import logging
 import os
+import time
 
 
 def upload_file(socket, filename, filedir, logger):
@@ -33,11 +34,15 @@ def upload_file(socket, filename, filedir, logger):
     # Send the file
     logger.info("Sending file")
     with open(filepath, "rb") as f:
+        progress = 0
         while file_size > 0:
             msg_size = min(utils.MSG_SIZE, file_size)
             data = f.read(msg_size)
             socket.send_data(data)
             file_size -= len(data)
+            #time.sleep(0.1)
+            progress += len(data)
+            print(f'{progress}', end="\r")
 
     logger.info("Waiting for server response")
     response = socket.receive_data(1)
