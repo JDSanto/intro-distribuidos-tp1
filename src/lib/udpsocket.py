@@ -6,13 +6,6 @@ from lib.socket import Socket
 from enum import Enum
 
 
-# def calculate_checksum(data):
-#     """
-#     Calculates the checksum for a given byte sequence
-#     """
-#     return sum(data) % 256 ** UDPSegment.CHECKSUM_SIZE
-
-
 class UDPSegment():
     SEQ_NUM_SIZE = 1
     PADDING = SEQ_NUM_SIZE * 3
@@ -46,6 +39,9 @@ class UDPSegment():
         res += self.handshake.to_bytes(UDPSegment.SEQ_NUM_SIZE, byteorder="big")
         res += self.data
         return res
+    
+    def __str__(self):
+        return "seq_num: {}, ack: {}, handshake: {}, len(data): {}".format(self.seq_num, self.ack, self.handshake, len(self.data))
 
 
 
@@ -77,81 +73,68 @@ class UDPSocket(Socket):
         """
         self.logger.debug('starting handshake...')
         pkt = UDPSegment.pack(b'', self.seq_number, handshake=1)
-        self.conn_socket.sendto(pkt.to_bytes(), self.addr)
 
-        try:
-            pkt = self.receive_pkt(2)
-        except socket.timeout:
-            self.logger.debug(f'timeout for ack. restarting')
-            return self.handshake_server()
-
-        if not pkt.ack or not pkt.handshake or pkt.seq_num != self.seq_number:
+        while True:
+            try:
+                self.conn_socket.sendto(pkt.to_bytes(), self.addr)
+                pkt = self.receive_pkt(2)
+            except socket.timeout:
+                self.logger.debug(f'timeout for ack. restarting')
+                continue
+            if pkt.ack and pkt.handshake and pkt.seq_num == self.seq_number:
+                self.logger.debug('got handshake')
+                break
             self.logger.debug(f'got invalid handshake. restarting')
-            return self.handshake_server()
 
         # FIXME: it's in the address from recvfrom
         port = int.from_bytes(pkt.data, byteorder="big")
         self.addr = (self.addr[0], port)
         self.logger.debug(f'handshake done. port={port} bytes={pkt.data}')
 
-        self.send_ack(pkt.seq_num)
+        self.send_pkt(ack=1, seq_number=pkt.seq_num)
 
 
 
     # Send methods
-    def send_pkt(self, data, ack=0, handshake=0):
+    def send_pkt(self, data=b'', ack=0, handshake=0, seq_number=None):
         """
         Send data with headers through the socket
         """
-        # FIXME: name plz
-        self.logger.debug(f'trying to send package {self.seq_number}')
-        pkt = UDPSegment.pack(data, self.seq_number, ack=ack, handshake=handshake).to_bytes()
-        self.conn_socket.sendto(pkt, self.addr)
+        if seq_number == None:
+            seq_number = self.seq_number
 
-    def send_ack(self, seq_num):
-        self.logger.debug(f'trying to send ack {seq_num}')
-        pkt = UDPSegment.pack(b'', seq_num, ack=1).to_bytes()
-        self.conn_socket.sendto(pkt, self.addr)
+        pkt = UDPSegment.pack(data, seq_number, ack=ack, handshake=handshake)
+        self.logger.debug(f'sending package [{pkt}]')
+        self.conn_socket.sendto(pkt.to_bytes(), self.addr)
 
 
     def send_data(self, data, retry=True):
         """
-        Send data through the socket, creating the necessary headers
+        Send data through the socket, creating the necessary headers.
+        Waits for the corresponding ACK from the receiving end.
         """
         self.seq_number = (self.seq_number + 1) % 256
-        self.logger.debug(f'sending seq_num {self.seq_number}. waiting for ACK')
-
         self.send_pkt(data)
         while True:
             try:
                 if self.tries == UDPSocket.N_TRIES:
                     raise Exception("Connection lost")
-                pkt = self.receive_ack()
+                pkt = self.receive_pkt(0)
             except socket.timeout:
-                self.send_pkt(data)
                 if not retry:
                     self.logger.debug(f'got timeout.')
                     raise socket.timeout
+                self.send_pkt(data)
                 self.logger.debug(f'got timeout. resending seq_num {self.seq_number}')
                 self.tries += 1
-
                 continue
+
             if pkt.seq_num == self.seq_number and pkt.ack:
-                self.logger.debug(f'got ACK. ending')
+                self.logger.debug(f'got ACK. ending. pkt=[{pkt}]')
                 break
-            self.logger.debug(f'old ack={pkt.ack}, {pkt.seq_num} != {self.seq_number} obtained. resending package')
-            if not pkt.ack and pkt.seq_num <= self.remote_number:
-                self.send_ack(pkt.seq_num)
+            self.logger.debug(f'old pkt=[{pkt}]. resending package.')
         self.tries = 0
 
-
-
-    # Receive methods
-    def receive_ack(self):
-        self.logger.debug(f'trying to receive ack {self.seq_number}')
-        data, addr = self.conn_socket.recvfrom(UDPSegment.PADDING)
-        self.addr = addr
-        return UDPSegment.unpack(data)
 
     def receive_pkt(self, buffer_size):
         """
@@ -164,34 +147,33 @@ class UDPSocket(Socket):
 
     def receive_data(self, buffer_size):
         """
-        Receive data through the socket, removing the headers
+        Receive data through the socket, removing the headers.
+        Emits the corresponding ACK to the emitting end.
         """
         self.logger.debug(f'receiving more than seq_num {self.remote_number}')
-        try:
-            pkt = self.receive_pkt(buffer_size)
-        except socket.timeout:
-            self.tries += 1
-            if self.tries == UDPSocket.N_TRIES:
-                raise Exception("Connection lost")
-            return self.receive_data(buffer_size)
+        pkt = False
 
-        # while not (pkt.seq_num == ((self.seq_number + 1) % 256) and not pkt.ack):
-        # FIXME: what happens if the packages arrive out of order
-        while pkt.seq_num != ((self.remote_number + 1) % 256) or pkt.ack:
+        while True:
+
             try:
-                if not pkt.ack:
-                    self.send_ack(pkt.seq_num)
                 pkt = self.receive_pkt(buffer_size)
             except socket.timeout:
                 self.tries += 1
                 if self.tries == UDPSocket.N_TRIES:
                     raise Exception("Connection lost")
-                self.logger.debug(f'timeout on package. trying again (self.remote_number={self.remote_number}, pkt.seq_num={pkt.seq_num})')
-                pass
+                continue
 
-        self.logger.debug(f'got package {pkt.seq_num}. sending ACK.')
+            if pkt.seq_num == ((self.remote_number + 1) % 256) and not pkt.ack:
+                break
+
+            self.logger.debug(f'trying to receive again. pkt=[{pkt}]')
+
+            if not pkt.ack:
+                self.send_pkt(ack=1, seq_number=pkt.seq_num)
+
+        self.logger.debug(f'got package. sending ACK. pkt=[{pkt}]')
         self.remote_number = pkt.seq_num
-        self.send_ack(self.remote_number)
+        self.send_pkt(ack=1, seq_number=self.remote_number)
         self.tries = 0
         return pkt.data
 
