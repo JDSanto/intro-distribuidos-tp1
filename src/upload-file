@@ -6,6 +6,7 @@ from lib.udpsocket import UDPSocket
 
 import logging
 import os
+import time
 
 
 def upload_file(socket, filename, filedir, logger):
