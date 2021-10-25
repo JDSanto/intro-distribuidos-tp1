@@ -4,12 +4,17 @@ from lib.socket import Socket
 
 
 class TCPSocket(Socket):
+    
+    def __init__(self, conn_socket, addr, logger):
+        super().__init__(logger)
+        self.conn_socket = conn_socket;
+        self.addr = addr;
 
     @staticmethod
     def connect(host, port, logger):
-        conn_socet = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        conn_socet.connect((host, port))
-        return TCPSocket(conn_socet, (host, port), logger)
+        conn_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        conn_socket.connect((host, port))
+        return TCPSocket(conn_socket, (host, port), logger)
 
     def send_data(self, data):
         bytes_sent = 0

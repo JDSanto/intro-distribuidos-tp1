@@ -1,16 +1,13 @@
 class Socket:
 
-    def __init__(self, conn_socket, addr, logger):
+    def __init__(self, logger):
         """
-        Create the socket object with the corresponding connection
-        and addres
+        Create the socket object
         """
-        self.conn_socket = conn_socket
-        self.addr = addr
         self.logger = logger
 
     @staticmethod
-    def connect(host, port):
+    def connect(host, port, logger):
         """
         Create a new Socket object connecting to a host and port
         """

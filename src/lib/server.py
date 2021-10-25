@@ -1,7 +1,3 @@
-import socket
-import os
-from lib import utils
-
 
 class Server:
     def __init__(self, host, port, logger):
@@ -18,6 +14,9 @@ class Server:
         Starts the server, which will wait and process client connections
         and requests.
         """
+        raise NotImplementedError()
+
+    def wait_for_connection(self):
         raise NotImplementedError()
 
     def stop_server(self):

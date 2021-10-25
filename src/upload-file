@@ -3,6 +3,7 @@
 from lib import utils
 from lib.tcpsocket import TCPSocket
 from lib.udpsocket import UDPSocket
+from lib.stopandwait import SaWSocket
 
 import logging
 import os
@@ -68,6 +69,9 @@ if __name__ == "__main__":
     elif args.protocol == utils.Protocol.UDP:
         client = UDPSocket.connect("localhost", args.port, logger)
         logger.info("Starting File Transfer App with UDP...")
+    elif args.protocol == utils.Protocol.SAW:
+        client = SaWSocket.connect("localhost", args.port, logger)
+        logger.info("Starting File Transfer App with UDP+SaW...")
 
     upload_file(client, args.filename, args.src, logger)
 

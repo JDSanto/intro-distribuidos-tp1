@@ -10,6 +10,7 @@ VERBOSITY = {1: logging.DEBUG, 2: logging.INFO, 3: logging.ERROR}
 INT_SIZE = 4
 CHAR_SIZE = 1
 MSG_SIZE = 1024
+MAX_DG_SIZE = (1 << 16) - 1
 
 
 class Command(Enum):
@@ -25,6 +26,8 @@ class Status(Enum):
 class Protocol(Enum):
     UDP = "udp"
     TCP = "tcp"
+    SAW = "udp+saw"
+    GBN = "udp+gbn"
 
     def __str__(self):
         return self.value

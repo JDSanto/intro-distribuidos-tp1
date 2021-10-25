@@ -7,7 +7,8 @@ import threading
 
 
 from lib.tcpserver import TCPServer
-from lib.udpserver_mt import UDPServerMT
+from lib.udpserver import UDPServer
+from lib.stopandwait import SaWServer
 from lib import utils
 
 
@@ -116,8 +117,11 @@ if __name__ == "__main__":
         server = TCPServer("localhost", args.port, logger)
         logger.info("Starting TCP server...")
     elif args.protocol == utils.Protocol.UDP:
-        server = UDPServerMT("localhost", args.port, logger)
-        logger.info("Starting UDP server...")
+        server = UDPServer("localhost", args.port, logger)
+        logger.info("Starting UDP server...")        
+    elif args.protocol == utils.Protocol.SAW:
+        server = SaWServer("localhost", args.port, logger)
+        logger.info("Starting SaW server...")
 
     try:
         start_server(server, args.dest, logger)
