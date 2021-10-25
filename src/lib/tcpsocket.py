@@ -4,11 +4,11 @@ from lib.socket import Socket
 
 
 class TCPSocket(Socket):
-    
+
     def __init__(self, conn_socket, addr, logger):
         super().__init__(logger)
-        self.conn_socket = conn_socket;
-        self.addr = addr;
+        self.conn_socket = conn_socket
+        self.addr = addr
 
     @staticmethod
     def connect(host, port, logger):

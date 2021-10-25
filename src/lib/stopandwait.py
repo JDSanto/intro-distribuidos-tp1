@@ -5,6 +5,7 @@ from lib.socket import Socket
 from lib.udpsocket import UDPSocket
 from lib.udpserver import UDPServer
 
+
 class SaWSegment:
     SEQ_NUM_SIZE = 1
     PADDING = SEQ_NUM_SIZE * 3
@@ -22,13 +23,13 @@ class SaWSegment:
     @staticmethod
     def unpack(data):
         seq_num = int.from_bytes(data[: SaWSegment.SEQ_NUM_SIZE], byteorder="big")
-        data = data[SaWSegment.SEQ_NUM_SIZE :]
+        data = data[SaWSegment.SEQ_NUM_SIZE:]
 
         ack = int.from_bytes(data[: SaWSegment.SEQ_NUM_SIZE], byteorder="big")
-        data = data[SaWSegment.SEQ_NUM_SIZE :]
+        data = data[SaWSegment.SEQ_NUM_SIZE:]
 
         handshake = int.from_bytes(data[: SaWSegment.SEQ_NUM_SIZE], byteorder="big")
-        data = data[SaWSegment.SEQ_NUM_SIZE :]
+        data = data[SaWSegment.SEQ_NUM_SIZE:]
 
         return SaWSegment(data, seq_num, ack, handshake)
 
@@ -52,14 +53,14 @@ class SaWSocket(Socket):
 
     def __init__(self, conn_socket, logger):
         super().__init__(logger)
-        
+
         self.conn_socket = conn_socket
         self.seq_number = 0
         self.remote_number = 0
         self.tries = 0
         if conn_socket:
             conn_socket.setTimeout(SaWSocket.TIMEOUT)
-    
+
     def handshake_client(self, pkt):
         self.remote_number = pkt.seq_num
 
@@ -74,8 +75,7 @@ class SaWSocket(Socket):
                 continue
             if pkt.handshake == 0 and pkt.ack == 1:
                 break
-        self.logger.debug("finished handshake.")    
-    
+        self.logger.debug("finished handshake.")
 
     def handshake_server(self):
         """
@@ -97,7 +97,7 @@ class SaWSocket(Socket):
         self.send_pkt(ack=1, seq_number=pkt.seq_num)
         self.remote_number = pkt.seq_num
         self.logger.debug("handshake done.")
-        
+
     @staticmethod
     def connect(host, port, logger):
         udp_socket = UDPSocket.connect(host, port, logger)
@@ -110,7 +110,7 @@ class SaWSocket(Socket):
         """
         Send data with headers through the socket
         """
-        if seq_number == None:
+        if seq_number is None:
             seq_number = self.seq_number
 
         pkt = SaWSegment.pack(data, seq_number, ack=ack, handshake=handshake)
@@ -131,7 +131,7 @@ class SaWSocket(Socket):
                 pkt = self.receive_pkt(0)
             except socket.timeout:
                 if not retry:
-                    self.logger.debug(f"got timeout.")
+                    self.logger.debug("got timeout.")
                     raise socket.timeout
                 self.logger.debug(f"got timeout. resending seq_num {self.seq_number}")
                 self.send_pkt(data)
@@ -145,7 +145,7 @@ class SaWSocket(Socket):
             if pkt.seq_num == self.seq_number and pkt.ack:
                 self.logger.debug(f"got ACK. ending. pkt=[{pkt}]")
                 break
-            
+
             if pkt.handshake:
                 self.send_pkt(ack=1, seq_number=pkt.seq_num)
         self.tries = 0
@@ -162,7 +162,7 @@ class SaWSocket(Socket):
         Receive data through the socket, removing the headers.
         Emits the corresponding ACK to the emitting end.
         """
-        #self.logger.debug(f"receiving more than seq_num {self.remote_number}")
+        # self.logger.debug(f"receiving more than seq_num {self.remote_number}")
         pkt = False
 
         while True:
@@ -197,12 +197,12 @@ class SaWSocket(Socket):
     def close(self):
         # TODO: Gracefull shutdown
         self.conn_socket.close()
-        
-        
+
+
 class SaWServer(Server):
     def __init__(self, host, port, logger):
         self.udp_server = UDPServer(host, port, logger)
-    
+
     def start(self):
         self.udp_server.start()
 
@@ -213,6 +213,3 @@ class SaWServer(Server):
 
     def stop_server(self):
         self.udp_server.stop_server()
-
-    
-    

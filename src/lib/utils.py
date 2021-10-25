@@ -132,7 +132,7 @@ def parse_server_start():
 
 def validate_args(args):
     if args.verbose:
-        args.verbose = level = VERBOSITY[args.verbose]
+        args.verbose = VERBOSITY[args.verbose]
     if args.quiet:
         # TODO encontrar un NOSET que funque
         logging.basicConfig(level=logging.CRITICAL)
@@ -147,4 +147,3 @@ def validate_args(args):
         #     raise Exception(f'File {args.filename} not found')
         pass
     return args
-

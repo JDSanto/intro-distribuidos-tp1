@@ -118,7 +118,7 @@ if __name__ == "__main__":
         logger.info("Starting TCP server...")
     elif args.protocol == utils.Protocol.UDP:
         server = UDPServer("localhost", args.port, logger)
-        logger.info("Starting UDP server...")        
+        logger.info("Starting UDP server...")
     elif args.protocol == utils.Protocol.SAW:
         server = SaWServer("localhost", args.port, logger)
         logger.info("Starting SaW server...")
@@ -127,7 +127,7 @@ if __name__ == "__main__":
         start_server(server, args.dest, logger)
     except SigException:
         logger.info("Got signal. Exiting server...")
-    except:
+    except BaseException:
         traceback.print_exc()
     finally:
         logger.info("Stopping server...")

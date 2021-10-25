@@ -6,6 +6,7 @@ from lib import utils
 from lib.server import Server
 from lib.socket import Socket
 
+
 class UDPSocketMT(Socket):
     def __init__(self, addr, server):
         super().__init__(server.logger)
@@ -19,7 +20,7 @@ class UDPSocketMT(Socket):
         with self.condvar:
             self.queue.append(data)
             self.condvar.notify(1)
-        
+
     def setTimeout(self, timeout):
         self.timeout = timeout
 
@@ -58,12 +59,12 @@ class UDPServer(Server):
                 data, addr = self.server_socket.recvfrom(utils.MAX_DG_SIZE)
 
                 new_con = None
-                if not addr in self.connections:
+                if addr not in self.connections:
                     new_con = UDPSocketMT(addr, self)
                     self.connections[addr] = new_con
-                
+
                 self.connections[addr]._enqueue(data)
-                
+
                 if new_con:
                     return new_con
 
@@ -79,5 +80,3 @@ class UDPServer(Server):
     def stop_server(self):
         self.server_socket.close()
         self.stopped = True
-        
-
