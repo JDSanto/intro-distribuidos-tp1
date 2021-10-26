@@ -3,6 +3,7 @@
 from lib.tcpsocket import TCPSocket
 from lib.udpsocket import UDPSocket
 from lib.stopandwait import SaWSocket
+from lib.gbn import GBNSocket
 
 from lib import utils
 import logging
@@ -19,7 +20,7 @@ def download_file(socket, filename, dest_folder, logger):
     socket.send_data(utils.Command.DOWNLOAD.value)
 
     # Send the filename size
-    logger.info("Sending File size")
+    logger.info("Sending filename size")
     filename_size = len(filename)
     socket.send_data(filename_size.to_bytes(utils.INT_SIZE, byteorder="big"))
 
@@ -27,13 +28,15 @@ def download_file(socket, filename, dest_folder, logger):
     logger.info(f"Sending filename: {filename}")
     socket.send_data(filename.encode())
 
-    # Recieve the file size
+    # Receive the file size
+    logger.info("Receiving file size")
     file_size = int.from_bytes(socket.receive_data(utils.INT_SIZE), "big")
 
-    # Recieve the file
+    # Receive the file
     logger.info("Downloading file")
     with open(os.path.join(dest_folder, filename), "wb") as f:
         while file_size > 0:
+            logger.info(f"Remaining bytes {file_size}")
             data = socket.receive_data(min(utils.MSG_SIZE, file_size))
             f.write(data)
             file_size -= len(data)
@@ -65,6 +68,9 @@ if __name__ == "__main__":
     elif args.protocol == utils.Protocol.SAW:
         client = SaWSocket.connect("localhost", args.port, logger)
         logger.info("Starting File Transfer App with UDP+SaW...")
+    elif args.protocol == utils.Protocol.GBN:
+        client = GBNSocket.connect("localhost", args.port, logger)
+        logger.info("Starting File Transfer App with UDP+GBN...")
 
     download_file(client, args.filename, args.dst, logger)
     logger.info("File transfer complete")

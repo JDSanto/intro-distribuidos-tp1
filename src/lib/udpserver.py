@@ -27,14 +27,20 @@ class UDPSocketMT(Socket):
     def send_data(self, data):
         self.server._send_data(self.addr, data)
 
-    def receive_data(self, _buffer_size=None):
+    def receive_data(self, _buffer_size=None, wait=True):
         def is_available():
             return len(self.queue) > 0
 
         with self.condvar:
-            if not self.condvar.wait_for(is_available, timeout=self.timeout):
-                raise socket.timeout
-            return self.queue.pop(0)
+            if wait:
+                if not self.condvar.wait_for(is_available, timeout=self.timeout):
+                    raise socket.timeout
+                return self.queue.pop(0)
+            else:
+                if is_available():
+                    return self.queue.pop(0)
+                else:
+                    return None
 
     def close(self):
         self.server._close(self.addr)
@@ -62,6 +68,7 @@ class UDPServer(Server):
                 if addr not in self.connections:
                     new_con = UDPSocketMT(addr, self)
                     self.connections[addr] = new_con
+                    self.logger.info(f"New connection from {addr}")
 
                 self.connections[addr]._enqueue(data)
 

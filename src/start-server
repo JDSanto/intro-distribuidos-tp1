@@ -9,6 +9,7 @@ import threading
 from lib.tcpserver import TCPServer
 from lib.udpserver import UDPServer
 from lib.stopandwait import SaWServer
+from lib.gbn import GBNServer
 from lib import utils
 
 
@@ -45,14 +46,16 @@ def receive_file(socket, dest_folder, logger):
 
 
 def send_file(socket, dest_folder, logger):
-    # Recieve filename size
+    # Receive filename size
     filename_size = int.from_bytes(socket.receive_data(utils.INT_SIZE), "big")
+    logger.info(f"Receiving filename size: {filename_size}")
 
-    # Recieve filename
+    # Receive filename
     filename = socket.receive_data(filename_size).decode()
     logger.info(f"Receiving filename: {filename}")
 
     # Send file size
+    logger.info("Sending file size")
     file_size = os.path.getsize(os.path.join(dest_folder, filename))
     socket.send_data(file_size.to_bytes(utils.INT_SIZE, byteorder="big"))
 
@@ -72,10 +75,14 @@ def send_file(socket, dest_folder, logger):
         logger.error("File transfer failed")
     else:
         logger.info("File transfered")
+
     logger.info(f"Finished sending: {filename}")
 
 
 def serve(socket, dest_folder, logger):
+
+    socket.handshake_client()
+
     data = socket.receive_data(1)
     logger.info(f"Serving command: {data}")
 
@@ -122,6 +129,9 @@ if __name__ == "__main__":
     elif args.protocol == utils.Protocol.SAW:
         server = SaWServer("localhost", args.port, logger)
         logger.info("Starting SaW server...")
+    elif args.protocol == utils.Protocol.GBN:
+        server = GBNServer("localhost", args.port, logger)
+        logger.info("Starting File Transfer App with UDP+GBN...")
 
     try:
         start_server(server, args.dest, logger)

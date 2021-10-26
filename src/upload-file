@@ -4,6 +4,7 @@ from lib import utils
 from lib.tcpsocket import TCPSocket
 from lib.udpsocket import UDPSocket
 from lib.stopandwait import SaWSocket
+from lib.gbn import GBNSocket
 
 import logging
 import os
@@ -72,6 +73,9 @@ if __name__ == "__main__":
     elif args.protocol == utils.Protocol.SAW:
         client = SaWSocket.connect("localhost", args.port, logger)
         logger.info("Starting File Transfer App with UDP+SaW...")
+    elif args.protocol == utils.Protocol.GBN:
+        client = GBNSocket.connect("localhost", args.port, logger)
+        logger.info("Starting File Transfer App with UDP+GBN...")
 
     upload_file(client, args.filename, args.src, logger)
 
