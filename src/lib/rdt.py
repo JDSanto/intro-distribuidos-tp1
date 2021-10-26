@@ -4,7 +4,7 @@ from lib.socket import Socket
 
 class RDTSegment:
     SEQ_NUM_SIZE = 2
-    PADDING = SEQ_NUM_SIZE * 2 + 1
+    PADDING = SEQ_NUM_SIZE + 2
 
     def __init__(self, data, seq_num, ack, handshake):
         self.data = data
@@ -21,8 +21,8 @@ class RDTSegment:
         seq_num = int.from_bytes(data[: RDTSegment.SEQ_NUM_SIZE], byteorder="big")
         data = data[RDTSegment.SEQ_NUM_SIZE:]
 
-        ack = int.from_bytes(data[: RDTSegment.SEQ_NUM_SIZE], byteorder="big")
-        data = data[RDTSegment.SEQ_NUM_SIZE:]
+        ack = int.from_bytes(data[: 1], byteorder="big")
+        data = data[1:]
 
         handshake = int.from_bytes(data[: 1], byteorder="big")
         data = data[1:]
@@ -31,7 +31,7 @@ class RDTSegment:
 
     def to_bytes(self):
         res = self.seq_num.to_bytes(RDTSegment.SEQ_NUM_SIZE, byteorder="big")
-        res += self.ack.to_bytes(RDTSegment.SEQ_NUM_SIZE, byteorder="big")
+        res += self.ack.to_bytes(1, byteorder="big")
         res += self.handshake.to_bytes(1, byteorder="big")
         res += self.data
         return res
@@ -166,5 +166,15 @@ class RDTSocket(Socket):
         return pkt.data
 
     def close(self):
-        # TODO: Gracefull shutdown
+        # Wait for resends due to lost outgoing acks
+        self.tries = 0
+        while self.tries < RDTSocket.N_TRIES:
+            try:
+                pkt = self.receive_pkt(0)
+                if not pkt.ack:
+                    self.send_pkt(ack=1, seq_number=pkt.seq_num)
+            except socket.timeout:
+                self.tries += 1
+                pass
+            
         self.conn_socket.close()

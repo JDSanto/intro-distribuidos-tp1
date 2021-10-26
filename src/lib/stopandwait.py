@@ -50,18 +50,6 @@ class SaWSocket(RDTSocket):
 
     def close(self):
         self.logger.debug("Closing SaW socket")
-
-        # Wait for resends due to lost outgoing acks
-        self.tries = 0
-        while self.tries < RDTSocket.N_TRIES:
-            try:
-                pkt = self.receive_pkt(0)
-                if not pkt.ack:
-                    self.send_pkt(ack=1, seq_number=pkt.seq_num)
-            except socket.timeout:
-                self.tries += 1
-                pass
-
         RDTSocket.close(self)
 
 

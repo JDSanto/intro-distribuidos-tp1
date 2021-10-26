@@ -86,18 +86,9 @@ class GBNSocket(RDTSocket):
         return RDTSocket.receive_data(self, buffer_size)
 
     def close(self):
+        self.logger.debug("Closing GBN socket")
         # Wait to confirm in flight pkts before closing
         self.await_empty_send_queue()
-
-        # Wait for resends due to lost outgoing acks
-        self.tries = 0
-        while self.tries < RDTSocket.N_TRIES:
-            try:
-                pkt = self.receive_pkt(0)
-                self.process_ack(pkt)
-            except socket.timeout:
-                self.tries += 1
-                pass
 
         RDTSocket.close(self)
 
