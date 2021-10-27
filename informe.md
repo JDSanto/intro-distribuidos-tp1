@@ -52,6 +52,8 @@ include-before: \renewcommand{\texttt}[1]{\OldTexttt{\color{magenta}{#1}}}
 
 La entrega debe contar con un informe donde se demuestre conocimiento de la interfaz de sockets, así como también los resultados de las ejecuciones de prueba (capturas de ejecución de cliente y logs del servidor). El informe debe describir la arquitectura de la aplicación. En particular, se pide detallar el protocolo de red implementado para cada una de las operaciones requeridas.
 
+Comparar la performance de la versión GBN del protocolo y la versión Stop&Wait utilizando archivos de distintos tamaños y bajo distintas configuraciones de pérdida de paquetes.
+
 # Preguntas a responder
 
 > _Describa la arquitectura Cliente-Servidor._
