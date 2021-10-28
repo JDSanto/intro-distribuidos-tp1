@@ -77,6 +77,34 @@ Un protocolo de capa de aplicación determina cómo se comunican entre sí los p
 
 > La capa de transporte del stack TCP/IP ofrece dos protocolos: TCP y UDP. ¿Qué servicios proveen dichos protocolos? ¿Cuáles son sus características? ¿Cuando es apropiado utilizar cada uno?
 
+La capa de transporte tiene como principal objetivo extender el servicio de entrega de la capa de red a la capa de aplicación, entre procesos corriendo en diferentes sistema finales. Dentro del stack TCP/IP se tienen los protocolos UDP y TCP, cada uno con sus respectivos servicios y características.
+
+### UDP: User Datagram Protocol
+#### Características
+- Con pérdida de paquetes y posibilidad de paquetes duplicados
+- Sin necesidad de conexión
+- Pocos headers
+#### Servicios
+- Entrega de data process-to-proccess
+- Chequeo de errores/integridad. Lo hace poniendo el campo de detección de error (checksum) en los headers.
+
+### TCP: Transmission Control Protocol
+#### Características
+- Sin pérdida de paquetes ni duplicados (confiable)
+- Servicio orientado a conexión para la aplicación que lo usa
+- Muchos headers
+#### Servicios
+- Entrega de data process-to-proccess
+- Reliable Data Transfer (RDT)
+  - Chequeo de errores/integridad
+  - Confiabilidad de entrega
+  - Orden asegurado
+- Control de congestión
+
+Se suele usar UDP cuando la velocidad en la entrega de los datos importa más que la confiabilidad de los mismos. Algunos escenarios comunes son el streaming multimedia, telefonía por internet o juegos online, todos ellos con el factor común de que lo más importante es tener la última novedad lo antes posible y donde un paquete perdido no afecta significativamente la experiencia del uso de la aplicación por parte de los usuarios. 
+
+Por otra parte, TCP se suele usar en el resto de los casos donde la confiabilidad de entrega es imprescindible. Algunas aplicaciones que utilizan protocolos de aplicación con TCP son por ejemplo e-mail, web y transferencia de archivos.
+
 # Dificultades encontradas
 
 # Conclusión
