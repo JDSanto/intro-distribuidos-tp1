@@ -25,15 +25,15 @@ def receive_file(socket, dest_folder, logger):
         logger.info(f"Creating destination folder: {dest_folder}")
         os.makedirs(dest_folder)
 
-    # Recieve filename size and file size
+    # Receive filename size and file size
     file_size = int.from_bytes(socket.receive_data(utils.INT_SIZE), "big")
     filename_size = int.from_bytes(socket.receive_data(utils.INT_SIZE), "big")
 
-    # Recieve filename
+    # Receive filename
     filename = socket.receive_data(filename_size).decode()
     logger.info(f"Receiving filename: {filename}")
 
-    # Recieve file
+    # Receive file
     with open(os.path.join(dest_folder, filename), "wb") as f:
         while file_size > 0:
             data = socket.receive_data(min(utils.MSG_SIZE, file_size))
@@ -45,10 +45,10 @@ def receive_file(socket, dest_folder, logger):
 
 
 def send_file(socket, dest_folder, logger):
-    # Recieve filename size
+    # Receive filename size
     filename_size = int.from_bytes(socket.receive_data(utils.INT_SIZE), "big")
 
-    # Recieve filename
+    # Receive filename
     filename = socket.receive_data(filename_size).decode()
     logger.info(f"Receiving filename: {filename}")
 

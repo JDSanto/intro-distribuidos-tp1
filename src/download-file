@@ -27,10 +27,10 @@ def download_file(socket, filename, dest_folder, logger):
     logger.info(f"Sending filename: {filename}")
     socket.send_data(filename.encode())
 
-    # Recieve the file size
+    # Receive the file size
     file_size = int.from_bytes(socket.receive_data(utils.INT_SIZE), "big")
 
-    # Recieve the file
+    # Receive the file
     logger.info("Downloading file")
     with open(os.path.join(dest_folder, filename), "wb") as f:
         while file_size > 0:
