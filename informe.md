@@ -64,9 +64,14 @@ Para que un cliente pueda contactar al servidor, este último cuenta con una dir
 
 Algunos ejemplos de arquitecturas cliente-servidor más conocidas son: Web, e-mail y FTP (como es el caso de este TP).
 
-(Agregar imagine 2.2 del libro, pag 117)
+(Agregar imagen 2.2 del libro, pag 117)
 
 > ¿Cuál es la función de un protocolo de capa de aplicación?
+
+Un protocolo de capa de aplicación determina cómo se comunican entre sí los procesos de aplicaciones que corren en diferentes sistemas finales. Para ello define:
+- Los tipo de mensaje: solicitud o respuesta.
+- Los campos que tiene cada tipo de mensaje y el significado de cada uno.
+- Reglas para determinar cuándo y cómo un proceso envía y responde mensajes.
 
 > Detalle el protocolo de aplicación desarrollado en este trabajo.
 
