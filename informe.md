@@ -48,15 +48,90 @@ include-before: \renewcommand{\texttt}[1]{\OldTexttt{\color{magenta}{#1}}}
 
 # Hipótesis y suposiciones realizadas
 
+# Introducción
+
+El presente trabajo práctico tiene como objetivo la creación de una aplicación de red. 
+Para lograr este objetivo, se deberá desarrollar una aplicación de arquitectura cliente-servidor que implemente la funcionalidad de transferencia de archivos mediante las siguientes operaciones:
+- UPLOAD: Transferencia de un archivo del cliente hacia el servidor
+- DOWNLOAD: Transferencia de un archivo del servidor hacia el cliente
+
+Para tal finalidad, será necesario comprender cómo se comunican los procesos a través de la red, y cuál es el modelo de servicio que la capa de transporte le ofrece a la capa de aplicación. Como protocolo de capa de transporte, se implementa TCP y UDP.
+El protocolo TCP ofrece un servicio orientado a la conexión, garantiza que los mensajes lleguen a destino y provee un mecanismo de control de flujo. Por su parte, UDP es un servicio sin conexión, no ofrece fiabilidad, ni control de flujos, ni control de congestión, es por eso que se implementa una versión utilizando el protocolo Stop & Wait y otra versión utilizando el protocolo Go-Back-N, con el objetivo de lograr una transferencia confiable al utilizar el protocolo.
+
 # Implementación
+## Cliente
 
-La entrega debe contar con un informe donde se demuestre conocimiento de la interfaz de sockets, así como también los resultados de las ejecuciones de prueba (capturas de ejecución de cliente y logs del servidor). El informe debe describir la arquitectura de la aplicación. En particular, se pide detallar el protocolo de red implementado para cada una de las operaciones requeridas.
+La funcionalidad del cliente se divide en dos aplicaciones de línea de comandos: **upload-file** y **download-file**. El comando `upload-file` envía un archivo al servidor para ser guardado con el nombre asignado. Para ejecutar el comando:
+`python file-upload [-h] [-v | -q] [-H ADDR] [-p PORT] [-s FILEPATH] [-n FILENAME] [-P PROTOCOL]`
+Donde cada flag indica:
+- `-h/--help`: Imprime el mensaje de "help"
+- `-v/--verbose`: Incrementa en una la verbosidad en cuanto al sistema de logueo del servidor
+- `-q/--quiet`: Decrementa en uno la verbosidad en cuanto al sistema de logueo.
+- `-H/--host`: Indica el la dirección IP del servicio
+- `p/--port`: Indica el puerto
+- `-s/--src`: Indica el path del archivo a subir.
+- `-n/--name`: Nombre del archivo a subir.
+- `-P/--protocol`: Para indicar el protocolo a utilizar. En el mismo se puede ingresar "tcp" para utilizar el protocolo de TCP, "udp+saw" para usar UDP con la implementación de Stop and Wait y "udp+gbn" para usar UDP con el protocolo de Go-Back-N.
 
-Comparar la performance de la versión GBN del protocolo y la versión Stop&Wait utilizando archivos de distintos tamaños y bajo distintas configuraciones de pérdida de paquetes.
+En nuestra implementación, sin importar el protocolo, esta operación sigue los siguientes pasos:
+1. Crea un Socket con el protocolo correspondiente según el parámetro ingresado en `-P/--protocol` en el host "localhost" y el puerto pasado por parámetro.
+2. Envía el comando de `UPLOAD` al servidor para que el mismo se prepare para recibir un archivo.
+3. Luego se envía el tamaño del nombre del archivo a subir y el tamaño del archivo mismo.
+4. Se envía el nombre del archivo.
+5. Comienza el envío del archivo en sí, para ello, se dividen los mensajes largos en segmentos más cortos de tamaño `MSG_SIZE`(1024). Es decir que se envían mensajes de este tamaño hasta completar el archivo o hasta que quede un segmento menor al tamaño del archivo, de ser así se manda un último mensaje con este tamaño inferior.
+6. Por último, se espera una respuesta del servidor para corroborar si la transferencia de archivos se resolvió de forma correcta.
+
+El comando `download-file` descarga un archivo especificado desde el servidor. Para poder realizar la operación se debe ejecutar:
+`python download-file [-h] [-v | -q] [-H ADDR] [-p PORT] [-d FILEPATH] [-n FILENAME]  [-P PROTOCOL]`
+Donde todos los flags indican lo mismo que con el comando anterior, con la diferencia de `-d/--dst` que indica el path de destino del archivo a descargar.
+
+En nuestra implementación, sin importar el protocolo, esta operación sigue los siguientes pasos:
+1. Al igual que el comando de `upload`, vamos a necesitar crear el socket correspondiente al protocolo a utilizar.
+2. Envía el comando de `DOWNLOAD` al servidor para que el mismo se prepare para descargar un archivo.
+3. Se envía el tamaño del nombre del archivo y luego se envía el nombre mismo para que el servidor ubique el archivo a enviar.
+4. Una vez que el servidor ya conoce el archivo a enviar, el cliente va a recibir el tamaño del mismo.
+5. Conociendo el tamaño, le permitimos al cliente saber cuanto iterar hasta que la descarga está completa.
+
+## Servidor
+
+El servidor debe estar preparado para recibir un mensaje que indica que comienza una nueva conexión, es decir que tiene que estar ejecutándose como proceso antes de que el cliente trate de iniciar el contacto. Es por eso, que tanto para TCP como UDP, el primer comando a ejecutar es el `start-server`.
+Para inicializarlo se deben pasar diferentes comandos:
+```start-server [-h] [-v | -q] [-H ADDR] [-p PORT] [-s DIRPATH]```
+Donde los flags indican:
+- `-h/--help`: Imprime el mensaje de "help"
+- `-v/--verbose`: Incrementa en una la verbosidad en cuanto al sistema de logueo del servidor
+- `-q/--quiet`: Decrementa en uno la verbosidad en cuanto al sistema de logueo.
+- `-H/--host`: Indica el la dirección IP del servicio
+- `p/--port`: Indica el puerto
+- `-s/--storage`: El path en el que se almacenan los archivos.
+
+El servidor va a proveer el servicio de almacenamiento y descarga de archivos. Para ello seguirá los siguientes pasos:
+1. Una vez que recibe el comando de `start-server`, creará un nuevo servidor con la implementación del protocolo determinado dependiendo del flag `-P/--protocol` ingresado por parámetro.
+2. Una vez que el mismo está creado, se quedará a la espera de una nueva conexión, como se comentaba previamente.
+3. Cuando recibe una conexión nueva, abre un thread para resolverlo. Por lo tanto en simultáneo, está preparado para recibir nuevas conexiones.
+4. Recibe `UPLOAD` o `DOWNLOAD` y se prepara para ejecutar alguna de las dos operaciones permitidas.
+**UPLOAD**: Se va a ocupar de recibir un archivo.
+  1. Crea la carpeta de destino que se pasa por parámetro en el caso de que no exista.
+  2. Recibe por parte del cliente el tamaño del nombre del archivo y el tamaño del archivo en sí.
+  3. Recibe el nombre del archivo que deberá subir.
+  4. Recibirá el archivo de a segmentos de tamaño `MSG_SIZE`, por lo tanto, teniendo en cuenta que ya conoce su tamaño, va a iterar hasta saber que consiguió el archivo completo.
+  5. Una vez que finalizó, se encarga de mandar un mensaje al cliente de que finalizó correctamente el comando.
+**DOWNLOAD**: Se va a ocupar de enviar un archivo.
+   1. Recibe el tamaño del nombre del archivo y luego el nombre del archivo a descargar.
+   2. Una vez que el servidor ubica el archivo solicitado, le envía al cliente el tamaño del archivo si existe.
+   3. Le envía el archivo al cliente de a segmentos de a `MSG_SIZE`.
+   4. Espera que el cliente le mande un mensaje indicando que recibió el archivo correctamente.
+
+## TCP
+
+TCP es un protocolo orientado a la conexión, es decir que antes de que el cliente y el servidor comienzan a enviarse datos entre sí, se debe cumplir un proceso de tres fases.
+### Cliente
+
+Es el encargado de iniciar el contacto con el servidor, para ello, debe crear un socket TCP especificando la dirección del socket (IP del host servidor enviado por parámetro).
 
 # Preguntas a responder
 
-> _Describa la arquitectura Cliente-Servidor._
+> _ Describa la arquitectura Cliente-Servidor._
 
 La arquitectura Cliente-Servidor se caracteriza por tener un host siempre activo, llamado servidor, que atiende las solicitudes de otros hosts, llamados clientes. Es decir que los clientes no pueden comunicarse directamente entre sí.
 
@@ -75,9 +150,9 @@ Un protocolo de capa de aplicación determina cómo se comunican entre sí los p
 
 > Detalle el protocolo de aplicación desarrollado en este trabajo.
 
-> La capa de transporte del stack TCP/IP ofrece dos protocolos: TCP y UDP. ¿Qué servicios proveen dichos protocolos? ¿Cuáles son sus características? ¿Cuando es apropiado utilizar cada uno?
+> La capa de transporte del stack TCP/IP ofrece dos protocolos: TCP y UDP. ¿Qué servicios proveen dichos protocolos? ¿Cuáles son sus características? ¿Cuándo es apropiado utilizar cada uno?
 
-La capa de transporte tiene como principal objetivo extender el servicio de entrega de la capa de red a la capa de aplicación, entre procesos corriendo en diferentes sistema finales. Dentro del stack TCP/IP se tienen los protocolos UDP y TCP, cada uno con sus respectivos servicios y características.
+La capa de transporte tiene como principal objetivo extender el servicio de entrega de la capa de red a la capa de aplicación, entre procesos corriendo en diferentes sistemas finales. Dentro del stack TCP/IP se tienen los protocolos UDP y TCP, cada uno con sus respectivos servicios y características.
 
 ### UDP: User Datagram Protocol
 #### Características
@@ -85,7 +160,7 @@ La capa de transporte tiene como principal objetivo extender el servicio de entr
 - Sin necesidad de conexión
 - Pocos headers
 #### Servicios
-- Entrega de data process-to-proccess
+- Entrega de data process-to-process
 - Chequeo de errores/integridad. Lo hace poniendo el campo de detección de error (checksum) en los headers.
 
 ### TCP: Transmission Control Protocol
@@ -94,7 +169,7 @@ La capa de transporte tiene como principal objetivo extender el servicio de entr
 - Servicio orientado a conexión para la aplicación que lo usa
 - Muchos headers
 #### Servicios
-- Entrega de data process-to-proccess
+- Entrega de data process-to-process
 - Reliable Data Transfer (RDT)
   - Chequeo de errores/integridad
   - Confiabilidad de entrega
@@ -108,3 +183,4 @@ Por otra parte, TCP se suele usar en el resto de los casos donde la confiabilida
 # Dificultades encontradas
 
 # Conclusión
+
