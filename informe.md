@@ -58,7 +58,13 @@ Comparar la performance de la versión GBN del protocolo y la versión Stop&Wait
 
 > _Describa la arquitectura Cliente-Servidor._
 
-La arquitectura...
+La arquitectura Cliente-Servidor se caracteriza por tener un host siempre activo, llamado servidor, que atiende las solicitudes de otros hosts, llamados clientes. Es decir que los clientes no pueden comunicarse directamente entre sí.
+
+Para que un cliente pueda contactar al servidor, este último cuenta con una dirección fija y conocida, llamada dirección IP. Por otro lado, el servidor no conoce previamente la dirección de los clientes.
+
+Algunos ejemplos de arquitecturas cliente-servidor más conocidas son: Web, e-mail y FTP (como es el caso de este TP).
+
+(Agregar imagine 2.2 del libro, pag 117)
 
 > ¿Cuál es la función de un protocolo de capa de aplicación?
 
