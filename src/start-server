@@ -81,8 +81,6 @@ def send_file(socket, dest_folder, logger):
 
 def serve(socket, dest_folder, logger):
 
-    socket.handshake_client()
-
     data = socket.receive_data(1)
     logger.info(f"Serving command: {data}")
 

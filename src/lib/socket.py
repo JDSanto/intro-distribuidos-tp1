@@ -22,8 +22,3 @@ class Socket:
     def close(self):
         raise NotImplementedError()
 
-    def handshake_client(self):
-        pass
-
-    def handshake_server(self):
-        pass

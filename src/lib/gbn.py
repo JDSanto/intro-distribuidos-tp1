@@ -17,13 +17,12 @@ class GBNSocket(RDTSocket):
     def connect(host, port, logger):
         udp_socket = UDPSocket.connect(host, port, logger)
         rdt_socket = GBNSocket(udp_socket, logger)
-        # rdt_socket.handshake_server()
         return rdt_socket
 
     def send_data(self, data):
         sent = False
 
-        # If there is root in the window sent the pkt
+        # If there is room in the window sent the pkt
         if len(self.in_flight) < GBNSocket.N:
             self.seq_number = RDTSegment.increment(self.seq_number)
             pkt = self.send_pkt(data)
@@ -38,7 +37,7 @@ class GBNSocket(RDTSocket):
             self.process_ack(pkt)
             pkt = self.receive_pkt(0, wait=False)
 
-        # If the window was full
+        # If the window was full => block until there is room
         if not sent:
             self.await_ack()
             # reattempt to send after wait

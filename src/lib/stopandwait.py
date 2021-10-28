@@ -12,7 +12,6 @@ class SaWSocket(RDTSocket):
     def connect(host, port, logger):
         udp_socket = UDPSocket.connect(host, port, logger)
         rdt_socket = SaWSocket(udp_socket, logger)
-        rdt_socket.handshake_server()
         return rdt_socket
 
     def send_data(self, data, retry=True):
@@ -44,8 +43,6 @@ class SaWSocket(RDTSocket):
                 self.logger.debug(f"got ACK. ending. pkt=[{pkt}]")
                 break
 
-            if pkt.handshake:
-                self.send_pkt(ack=1, seq_number=pkt.seq_num)
         self.tries = 0
 
     def close(self):
