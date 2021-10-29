@@ -128,7 +128,6 @@ def parse_server_start():
         required=True,
         default=DEFAULT_DEST,
     )
-    parser.add_argument("--name", dest="filename")
     return validate_args(parser.parse_args())
 
 
@@ -142,6 +141,4 @@ def validate_args(args):
     if args.port:
         if args.port < 1024 or args.port > 65535:
             args.port = DEFAULT_PORT
-    if args.filename:
-        pass
     return args

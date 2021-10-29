@@ -1,3 +1,4 @@
+# File transfer client and server
 
 # Usage
 
@@ -6,7 +7,7 @@
 ```
 > cd src
 > python start-server -h    
-usage: start-server [-h] [-v {1,2,3}] [-q] [-H HOST] [-p PORT] [-P {udp,tcp}] -s DEST [--name FILENAME]
+usage: start-server [-h] [-v {1,2,3}] [-q] [-H HOST] [-p PORT] [-P {udp,tcp,udp+saw,udp+gbn}] -s DEST
 
 Parse flags for File Transfer App
 
@@ -17,11 +18,10 @@ optional arguments:
   -q, --quiet           decrease output verbosity
   -H HOST, --host HOST  server IP address
   -p PORT, --port PORT  server port
-  -P {udp,tcp}, --protocol {udp,tcp}
+  -P {udp,tcp,udp+saw,udp+gbn}, --protocol {udp,tcp,udp+saw,udp+gbn}
                         protocol to use
   -s DEST, --storage DEST
                         storage dir path
-  --name FILENAME
 
 ```
 
@@ -32,7 +32,7 @@ optional arguments:
 ```
 > cd src
 > python upload-file -h
-usage: upload-file [-h] [-v {1,2,3}] [-q] [-H HOST] [-p PORT] [-P {udp,tcp}] -s SRC -n FILENAME
+usage: upload-file [-h] [-v {1,2,3}] [-q] [-H HOST] [-p PORT] [-P {udp,tcp,udp+saw,udp+gbn}] -s SRC -n FILENAME
 
 Parse flags for File Transfer App
 
@@ -43,7 +43,7 @@ optional arguments:
   -q, --quiet           decrease output verbosity
   -H HOST, --host HOST  server IP address
   -p PORT, --port PORT  server port
-  -P {udp,tcp}, --protocol {udp,tcp}
+  -P {udp,tcp,udp+saw,udp+gbn}, --protocol {udp,tcp,udp+saw,udp+gbn}
                         protocol to use
   -s SRC, --src SRC     source file path
   -n FILENAME, --name FILENAME
@@ -54,7 +54,7 @@ optional arguments:
 ```
 > cd src
 > python download-file -h
-usage: download-file [-h] [-v {1,2,3}] [-q] [-H HOST] [-p PORT] [-P {udp,tcp}] -d DST [-n FILENAME]
+usage: download-file [-h] [-v {1,2,3}] [-q] [-H HOST] [-p PORT] [-P {udp,tcp,udp+saw,udp+gbn}] -d DST [-n FILENAME]
 
 Parse flags for File Transfer App
 
@@ -65,16 +65,18 @@ optional arguments:
   -q, --quiet           decrease output verbosity
   -H HOST, --host HOST  server IP address
   -p PORT, --port PORT  server port
-  -P {udp,tcp}, --protocol {udp,tcp}
+  -P {udp,tcp,udp+saw,udp+gbn}, --protocol {udp,tcp,udp+saw,udp+gbn}
                         protocol to use
   -d DST, --dst DST     Destination file path
   -n FILENAME, --name FILENAME
                         filename
+
 ```
 
 ## Run tests
 
-Automated tests for running the server with the upload/download commands (tested on linux only). `-v` for printing program output.
+Automated tests for running the server with the upload/download commands (tested on linux and macOS only). `-v` for printing full debug program output.
+
 ```
 bash test-connection.sh <protocol> [-v]
 ```

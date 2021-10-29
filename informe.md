@@ -46,10 +46,6 @@ include-before: \renewcommand{\texttt}[1]{\OldTexttt{\color{magenta}{#1}}}
 
 # Introducción
 
-# Hipótesis y suposiciones realizadas
-
-# Introducción
-
 El presente trabajo práctico tiene como objetivo la creación de una aplicación de red.
 Para lograr este objetivo, se deberá desarrollar una aplicación de arquitectura cliente-servidor que implemente la funcionalidad de transferencia de archivos mediante las siguientes operaciones:
 
@@ -58,6 +54,13 @@ Para lograr este objetivo, se deberá desarrollar una aplicación de arquitectur
 
 Para tal finalidad, será necesario comprender cómo se comunican los procesos a través de la red, y cuál es el modelo de servicio que la capa de transporte le ofrece a la capa de aplicación. Como protocolo de capa de transporte, se implementa TCP y UDP.
 El protocolo TCP ofrece un servicio orientado a la conexión, garantiza que los mensajes lleguen a destino y provee un mecanismo de control de flujo. Por su parte, UDP es un servicio sin conexión, no ofrece fiabilidad, ni control de flujos, ni control de congestión, es por eso que se implementa una versión utilizando el protocolo Stop & Wait y otra versión utilizando el protocolo Go-Back-N, con el objetivo de lograr una transferencia confiable al utilizar el protocolo.
+
+# Hipótesis y suposiciones realizadas
+
+- Por dificultad para simularlo, se asume que no llegan paquetes corruptos a la capa de aplicación.
+- Puede existir una pérdida de conexión.
+- Si un archivo a subir ya se encuentra en el servidor, se reemplaza su contenido.
+- El archivo a descargar siempre se encuentra presente en el servidor.
 
 # Implementación
 
@@ -139,8 +142,6 @@ Para **DOWNLOAD**: Hay que encargarse de envíar un archivo
 
 ## Uso y pruebas
 
-<!-- TODO: Agregar más texto? -->
-
 Ejecución `download-file` y `start-server`, logs nivel `INFO`
 
 ![](docs/ejecucion1.png)
@@ -190,15 +191,15 @@ Como servicio adicional, `UDPServer` permite la conexión de múltiples clientes
 La implementación de este protocolo nos va a asegurar que la información no se pierda y que los paquetes se reciban en el orden correcto. La idea principal de este protocolo es que el cliente no envía paquetes hasta que recibe una señal ACK y el servidor por su parte se encarga de mandar este ACK siempre y cuando reciba un paquete valido.
 Si el ACK no logra llegar al emisor antes de un cierto tiempo, llamado tiempo de espera, entonces el emisor, reenvía la trama otra vez. En caso de que el emisor sí reciba el ACK, entonces envía la siguiente trama.
 
-El **segmento** que utilizamos cuenta con:
+El **segmento** `RDTSegment` que utilizamos cuenta con:
 
 - `data`: La información que se envía en el paquete
 - `seq_number` : El numero de secuencia que se le asigna al paquete enviado.
 - `ack`: Indica si es una señal ACK, es decir simplemente un mensaje que indica que se recibió el paquete de forma correcta.
 
-Mientras que el **Socket** cuenta con:
+Mientras que el **Socket**, el `SaWSocket` y su clase padre `RDTSocket` cuentan con:
 
-- `conn_socket`: La conexión al socket
+- `conn_socket`: La conexión al socket por la cuál recibir y enviar paquetes mediante UDP.
 - `seq_number`: El número de secuencia
 - `remote_number`: El último numero de secuencia que arribo correctamente
 - `tries`: El numero de intentos con el que se valida si se perdió la conexión.
@@ -214,7 +215,7 @@ En cuanto a los métodos importantes:
 
 Al igual que Stop and Wait, este protocolo asegura que la información no se pierda y llegue en orden correcto. A diferencia del anterior, el emisor no espera a recibir un ACK para seguir enviando paquetes, pero mantiene una ventana de paquetes que aún no recibieron el ACK. El protocolo implementado no utiliza buffering, es decir que el receptor descarta los paquetes fuera de orden.
 
-El segmento y el socket tienen los mismos atributos, con la diferencia de que el socket tendrá la ventana de paquetes sin enviar `in-flight`.
+Se utiliza el mismo segmento `RDTSegment`, y por otro lado el socket `GBNSocket` tiene los mismos atributos que su clase padre `RDTSocket`, con la diferencia de que tendrá la ventana de paquetes sin enviar `in-flight`.
 
 Otros cambios en los métodos:
 
@@ -230,83 +231,36 @@ Se ejecuta el comando `upload-file` con los protocolos y diferentes tamaño de a
 ~/go/bin/comcast --device=lo0 --packet-loss=5%
 ```
 
-<!-- Probar combinaciones de
+El tiempo de prueba es lo que demora en subirse un archivo con `upload-file` y volverlo a bajar con `download-file`.
 
-archivo 100KB comcast 0%
-tcp: 0m0.872s
-udp+gbn: 0m0.938s
-udp+saw: 0m0.965s
+Archivo de 100KB:
 
-archivo 1000KB comcast 0%
-tcp: 0m0.969s
-udp+gbn: 0m1.573s
-udp+saw: 0m1.902s
+|     |    TCP    |  Go-Back-N |  Stop and Wait |
+|:---:|:---------:|:----------:|:--------------:|
+|  0% | 00:00.872s |  00:00.965s |    00:00.938s   |
+|  5% | 00:01.305s |  00:03.028s |    00:02.980s   |
+| 10% | 00:01.283s |  00:03.402s |    00:06.094s   |
+| 15% | 00:00.903s |  00:04.274s |    00:09.198s   |
 
-archivo 5000KB comcast 0%
-tcp: 0m1.352s
-udp+gbn: 0m3.852s
-udp+saw: 0m5.813s
+Archivo de 1MB:
 
-
-
-archivo 100KB comcast 5%
-tcp: 0m1.305s
-udp+gbn: 0m2.980s
-udp+saw: 0m3.028s
-
-archivo 1000KB comcast 5%
-tcp: 0m1.283s
-udp+gbn: 0m16.317s
-udp+saw: 0m23.384s
-
-archivo 5000KB comcast 5%
-tcp: 0m4.667s
-udp+gbn: 1m13.779s
-udp+saw: 2m0.011s
+|     |    TCP   | Go-Back-N | Stop and Wait |
+|:---:|:--------:|:---------:|:-------------:|
+|  0% | 00:00.969s |  00:01.573s |    00:01.902s   |
+|  5% | 00:01.283s | 00:16.317s |   00:23.384s   |
+| 10% | 00:02.428s | 00:29.366s |   00:48.091s   |
+| 15% | 00:06.179s | 00:39.944s |   01:18.090s   |
 
 
-archivo 100KB comcast 10%
-tcp: 0m1.283s
-udp+gbn: 0m3.402s
-udp+saw: 0m6.094s
+Archivo de 5MB:
 
-archivo 1000KB comcast 10%
-tcp: 0m2.428s
-udp+gbn: 0m29.366s
-udp+saw: 0m48.091s
+|     |    TCP    | Go-Back-N | Stop and Wait |
+|:---:|:---------:|:---------:|:-------------:|
+|  0% |  00:01.352s |  00:03.852s |    00:05.813s   |
+|  5% |  00:04.667s | 01:013.779s |    02:00.011s   |
+| 10% | 00:12.445s | 02:15.152s |    04:04.115s   |
+| 15% | 00:28.382s | 03:17.521s |   06:37.957s   |
 
-archivo 5000KB comcast 10%
-tcp: 0m12.445s
-udp+gbn: 2m15.152s
-udp+saw: 4m4.115s
-
-
-archivo 100KB comcast 15%
-tcp: 0m0.903s
-udp+gbn: 0m4.274s
-udp+saw: 0m9.198s
-
-archivo 1000KB comcast 15%
-tcp: 0m6.179s
-udp+gbn: 0m39.944s
-udp+saw: 1m18.090s
-
-archivo 5000KB comcast 15%
-tcp: 0m28.382s
-udp+gbn: 3m17.521s
-udp+saw: 6m37.957s
-
-
-
-
-Package loss: 0%, 5%, 10
-
-
-%, 15%-->
-
-Para un archivo de 500KBs:
-
-<!-- TODO -->
 
 # Preguntas a responder
 
@@ -403,5 +357,4 @@ Por otra parte, TCP se suele usar en el resto de los casos donde la confiabilida
 # Conclusión
 
 Tras completar las 3 implementaciones pedidas por la cátedra, pudimos compararlas en cuanto al tiempo que tardaban en subir y descargar archivos randoms de diferentes tamaños. Como era de esperarse, la implementación con Go-Back-N es más rápida que Stop & Wait, esto se debe a que la primera implementación es menos susceptible a la pérdida de ACKs. No obstante, nuestra implementación de Go-Back-N es más lenta que nuestra implementación con protocolo TCP, por lo que podemos afirmar que aún es posible mejorar nuestras implementaciones ya que cumplimos con el objetivo de garantizar la transferencia de datos fiables pero no conseguimos alcanzar un protocolo comparable con TCP.
-Teniendo en cuenta que nuestras implementaciones son confiables, pero no tan performantes como TCP a nivel capa de aplicación, hoy en día no utilizaremos las dos implementaciones RDT, sino que usamos el estándar ya existente de TCP que no solo es mucho más performante sino que además nos provee de muchísimos más servicios.
-Por último, cabe destacar que nos pareció un trabajo muy interesante que nos permitió comprender los protocolos con mayor facilidad y en mayor profundidad.
+Teniendo en cuenta que nuestras implementaciones son confiables, pero no tan performantes como TCP a nivel capa de aplicación, hoy en día no utilizaremos las dos implementaciones RDT, sino que usamos el estándar ya existente de TCP que no solo es mucho más performante sino que además nos provee de más servicios y garantías.
