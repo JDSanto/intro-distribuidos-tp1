@@ -71,9 +71,9 @@ El comando `upload-file` envía un archivo al servidor para ser guardado con el 
 Donde cada flag indica:
 
 - `-h/--help`: Imprime el mensaje de "help"
-- `-v/--verbose`: Incrementa en una la verbosidad en cuanto al sistema de logueo del servidor
+- `-v/--verbose`: Incrementa en uno la verbosidad en cuanto al sistema de logueo del servidor
 - `-q/--quiet`: Decrementa en uno la verbosidad en cuanto al sistema de logueo.
-- `-H/--host`: Indica el la dirección IP del servicio
+- `-H/--host`: Indica la dirección IP del servicio
 - `p/--port`: Indica el puerto
 - `-s/--src`: Indica el path del archivo a subir.
 - `-n/--name`: Nombre del archivo a subir.
@@ -99,7 +99,7 @@ En nuestra implementación, sin importar el protocolo, esta operación sigue los
 1. Al igual que el comando de `upload`, vamos a necesitar crear el socket correspondiente al protocolo a utilizar.
 2. Se envía la estructura Metadata.
 3. Una vez que el servidor ya conoce el archivo a enviar, el cliente va a recibir el tamaño del mismo.
-4. Conociendo el tamaño, le permitimos al cliente saber cuanto iterar hasta que la descarga está completa.
+4. Conociendo el tamaño, le permitimos al cliente saber cuánto iterar hasta que la descarga está completa.
 
 ## Servidor
 
@@ -110,9 +110,9 @@ El servidor debe estar preparado para recibir un mensaje que indica que comienza
 Donde los flags indican:
 
 - `-h/--help`: Imprime el mensaje de "help"
-- `-v/--verbose`: Incrementa en una la verbosidad en cuanto al sistema de logueo del servidor
+- `-v/--verbose`: Incrementa en uno la verbosidad en cuanto al sistema de logueo del servidor
 - `-q/--quiet`: Decrementa en uno la verbosidad en cuanto al sistema de logueo.
-- `-H/--host`: Indica el la dirección IP del servicio
+- `-H/--host`: Indica la dirección IP del servicio
 - `-p/--port`: Indica el puerto
 - `-s/--storage`: El path en el que se almacenan los archivos.
 - `-P/--protocol`: Para indicar el protocolo a utilizar. Los posibles valores son `tcp`, `udp`, `udp+saw` (Stop and Wait), `udp+gbn` (Go-Back-N).
@@ -154,19 +154,19 @@ Para facilitar el desarrollo, se cuenta con un script `test-connection.sh` el cu
 
 ## TCP
 
-TCP es un protocolo orientado a la conexión, es decir que antes de que el cliente y el servidor comienzan a enviarse datos entre sí, se debe cumplir un proceso de tres fases.
+TCP es un protocolo orientado a la conexión, es decir que antes de que el cliente y el servidor comiencen a enviarse datos entre sí, se debe cumplir un proceso de tres fases.
 
 ### Cliente
 
-Es el encargado de iniciar el contacto con el servidor, para ello, debe crear un socket TCP y conectarlo con el servidor. Esto se resuelve en el método estatico `connect()` que primero mediante el llamado a `socket()` se ocupa de crear el socket del cliente indicando que la red subyacente esta utilizando IPv4 y que el socket es TCP (SOCK_STREAM). Y luego con el llamado a `connect()` establece la conexión cliente servidor especificando la dirección del socket (IP del host servidor enviado por parámetro) y el host que en este caso se trata de "localhost".
+Es el encargado de iniciar el contacto con el servidor, para ello, debe crear un socket TCP y conectarlo con el servidor. Esto se resuelve en el método estático `connect()` que primero mediante el llamado a `socket()` se ocupa de crear el socket del cliente indicando que la red subyacente está utilizando IPv4 y que el socket es TCP (SOCK_STREAM). Y luego con el llamado a `connect()` establece la conexión cliente-servidor especificando la dirección del socket (IP del host servidor enviado por parámetro) y el host que en este caso se trata de "localhost".
 
-Por otro lado, contamos con los métodos de `send_data()` y `receive_data()`. En el primero, el programa cliente simplemente coloca los bytes de la cadena en la conexión TCP y en el segundo, que queda a la espera de recibir la cantidad de bytes especificada del servidor. A medida que se recibe la información, se va acumulando en una variable `data` hasta completar el buffer_size correspondiente.
+Por otro lado, contamos con los métodos de `send_data()` y `receive_data()`. En el primero, el programa cliente simplemente coloca los bytes de la cadena en la conexión TCP y en el segundo, queda a la espera de recibir la cantidad de bytes especificada del servidor. A medida que se recibe la información, se va acumulando en una variable `data` hasta completar el buffer_size correspondiente.
 
 Por último se cuenta con un método `close()` encargado de cerrar el socket y por lo tanto la conexión TCP entre el cliente y el servidor.
 
 ### Servidor
 
-De la misma manera que el cliente, se cuenta con un método de inicialización que llamaremos `start()`. Este también crea un socket especificando de la misma manera que hace uso de IPv4 y TCP. Se asocia el numero de puerto del servidor y dejamos el socket a la escucha de solicitudes de conexión TCP del cliente. También tenemos el método para cerrar la conexión.
+De la misma manera que el cliente, se cuenta con un método de inicialización que llamaremos `start()`. Este también crea un socket especificando de la misma manera que hace uso de IPv4 y TCP. Se asocia el número de puerto del servidor y dejamos el socket a la escucha de solicitudes de conexión TCP del cliente. También tenemos el método para cerrar la conexión.
 
 Por último se cuenta con el método `wait_for_connection` que se va a encargar de dedicarle un TCPSocket al cliente concreto que se conecta al mismo.
 
@@ -184,40 +184,41 @@ Como servicio adicional, `UDPServer` permite la conexión de múltiples clientes
 
 ### Stop and Wait
 
-La implementación de este protocolo nos va a asegurar que la información no se pierda y que los paquetes se reciban en el orden correcto. La idea principal de este protocolo es que el cliente no envía paquetes hasta que recibe una señal ACK y el servidor por su parte se encarga de mandar este ACK siempre y cuando reciba un paquete valido.
-Si el ACK no logra llegar al emisor antes de un cierto tiempo, llamado tiempo de espera, entonces el emisor, reenvía la trama otra vez. En caso de que el emisor sí reciba el ACK, entonces envía la siguiente trama.
+La implementación de este protocolo nos va a asegurar que la información no se pierda y que los paquetes se reciban en el orden correcto. La idea principal de este protocolo es que el cliente no envía paquetes hasta que recibe una señal ACK y el servidor por su parte se encarga de mandar este ACK siempre y cuando reciba un paquete válido.
+Si el ACK no logra llegar al emisor antes de un cierto tiempo, llamado `TIMEOUT`, entonces el emisor, reenvía la trama otra vez. En caso de que el emisor sí reciba el ACK, entonces envía la siguiente trama.
 
 El **segmento** `RDTSegment` que utilizamos cuenta con:
 
 - `data`: La información que se envía en el paquete
-- `seq_number` : El numero de secuencia que se le asigna al paquete enviado.
+- `seq_number` : El número de secuencia que se le asigna al paquete enviado.
 - `ack`: Indica si es una señal ACK, es decir simplemente un mensaje que indica que se recibió el paquete de forma correcta.
 
 Mientras que el **Socket**, el `SaWSocket` y su clase padre `RDTSocket` cuentan con:
 
 - `conn_socket`: La conexión al socket por la cuál recibir y enviar paquetes mediante UDP.
 - `seq_number`: El número de secuencia
-- `remote_number`: El último numero de secuencia que arribo correctamente
-- `tries`: El numero de intentos con el que se valida si se perdió la conexión.
+- `remote_number`: El último número de secuencia que arribó correctamente
+- `tries`: El número de intentos con el que se valida si se perdió la conexión.
 
 En cuanto a los métodos importantes:
 
 <!-- Murieron en la última versión. `handshake_client`/`handshake_server`: UDP es un servicio sin conexión, es decir que permite el envío de datagramas a través de la red sin que se haya establecido previamente una conexión. Es por eso que agregamos estos métodos para asegurarnos de una conexión segura. Una vez que nos aseguramos que el cliente y servidor tienen una conexión UDP, se realizan las configuraciones necesarias para comenzar el traspaso de información de un lado al otro. -->
 
-- `send_data`: Se encarga de enviar la data junto a su header a través del socket, por lo que empaqueta toda la información que corresponde y envía la data. Luego se quedara esperando el ACK correspondiente. En el caso de que se alcance el tiempo seteado de `TIMEOUT`, se reenviara el paquete. Este reintento no será infinito, se cuenta con una variable configurable de intentos, es decir que si intenta muchas veces el reenvio, el socket reconocerá que simplemente se perdió la conexión. Además se cuenta con un reconocimiento de paquetes duplicados, este caso aparece si se pierde el paquete que contiene el ACK, por lo que simplemente reenviará el mismo.
-- `receive_data`: Recibe la data a través del socket, le remueve el header y envía el ACK para avisar que se recibio correctamente el paquete.
+- `send_data`: Se encarga de enviar la data junto a su header a través del socket, por lo que empaqueta toda la información que corresponde y envía la data. Luego se quedará esperando el ACK correspondiente. En el caso de que se alcance el tiempo seteado de `TIMEOUT`, se reenviará el paquete. Este reintento no será infinito, se cuenta con una variable configurable de intentos, es decir que si intenta muchas veces el reenvío, el socket reconocerá que simplemente se perdió la conexión. Además se cuenta con un reconocimiento de paquetes duplicados, este caso aparece si se pierde el paquete que contiene el ACK, por lo que simplemente reenviará el mismo.
+- `receive_data`: Recibe la data a través del socket, le remueve el header y envía el ACK para avisar que se recibió correctamente el paquete.
 
 ### Go-Back-N
 
 Al igual que Stop and Wait, este protocolo asegura que la información no se pierda y llegue en orden correcto. A diferencia del anterior, el emisor no espera a recibir un ACK para seguir enviando paquetes, pero mantiene una ventana de paquetes que aún no recibieron el ACK. El protocolo implementado no utiliza buffering, es decir que el receptor descarta los paquetes fuera de orden.
 
-Se utiliza el mismo segmento `RDTSegment`, y por otro lado el socket `GBNSocket` tiene los mismos atributos que su clase padre `RDTSocket`, con la diferencia de que tendrá la ventana de paquetes sin enviar `in-flight`.
+Se utiliza el mismo segmento `RDTSegment`, y por otro lado el socket `GBNSocket` tiene los mismos atributos que su clase padre `RDTSocket`, con la diferenciade que tendrá la ventana de paquetes enviados `in-flight` que aún no se recibió su correspondiente ACK.
 
 Otros cambios en los métodos:
 
-- `send_data`: Si hay menos de `N` paquetes que no recibieron el ACK en la ventana `in-flight`, envía el paquete y lo agrega a la ventana. Toma solo un intento para recibir un ACK, y sigue en cualquier caso. En el caso contrario, se queda esperando a que reciba ACKs por parte del receptor.
-- `await_ack`: En el caso de que haya que esperar a un ACK, se llama a este método el cuál espera a un ACK de cualquiera de los paquetes encontrados en la ventana. Cada ACK elimina todos los paquetes de la lista hasta el número de secuencia correspondiente. Si se llega a un timeout, se reenvian los paquetes.
-- `receive_data`: Igual a Stop and Wait con la diferencia de que se envían todos los paquetes de la ventana `in-flight` hasta recibir ACKs antes de recibir paquetes.
+- `send_data`: Si hay menos de `N` paquetes que no recibieron el ACK en la ventana `in-flight`, envía el paquete y lo agrega a la ventana. Toma solo un intento para recibir un ACK, y sigue en cualquier caso. Si la ventana `in-flight` está completa, se queda esperando a que reciba ACKs por parte del receptor. 
+- `await_ack`: En el caso de que haya que esperar a un ACK, se llama a este método el cuál espera a un ACK de cualquiera de los paquetes encontrados en la ventana. Cada ACK elimina todos los paquetes de la lista hasta el número de secuencia correspondiente. Si se llega a un timeout, se reenvían los paquetes.
+- `receive_data`: Igual a Stop and Wait con la diferencia de que se envían todos los paquetes de la ventana `in-flight` (esperando a los ACKs para asegurar su envío correcto), antes de comenzar a recibir paquetes nuevos.
+
 
 # Análisis
 
@@ -227,7 +228,7 @@ Se ejecuta el comando `upload-file` con los protocolos y diferentes tamaño de a
 ~/go/bin/comcast --device=lo0 --packet-loss=5%
 ```
 
-El tiempo de prueba es lo que demora en subirse un archivo con `upload-file` y volverlo a bajar con `download-file`.
+El tiempo de prueba es lo que demora en subir un archivo con `upload-file` y volverlo a bajar con `download-file`.
 
 Archivo de 100KB:
 
@@ -282,7 +283,7 @@ Un protocolo de capa de aplicación determina cómo se comunican entre sí los p
 
 El protocolo desarrollado para los comandos de `upload` y `download` es un sencillo _handshake_ donde el cliente le envía primero al servidor una metadata del archivo que va solicitar cargar o descargar, y luego el archivo en sí.
 
-Esta metadata de la solicitud al servidor consiste en un mensaje de 64 bytes, de los cuales el primero se encarga de indicar el tipo de comando que se va a ejecutar (una `u` para `upload` y una `d` para `download`) y el resto de los bytes contienen el nombre del archivo (59 bytes, con padding), y, en el caso de ser un `upload`, el tamaño de este (los 4 bytes restants).
+Esta metadata de la solicitud al servidor consiste en un mensaje de 64 bytes, de los cuales el primero se encarga de indicar el tipo de comando que se va a ejecutar (una `u` para `upload` y una `d` para `download`) y el resto de los bytes contienen el nombre del archivo (59 bytes, con padding), y, en el caso de ser un `upload`, el tamaño de este (los 4 bytes restantes).
 
 Un diagrama de la estructura es el siguiente:
 
@@ -302,7 +303,7 @@ Un diagrama de la estructura es el siguiente:
 +--------++----------------++---------------+
 ```
 
-En el caso de un `upload`, luego de que el servidor reciba este mensaje, el siguiente envíado por el cliente es el archivo en sí. Utilizando el tamaño recibido, el servidor sabe exactamente cuantos bytes va a recibir. Por otro lado, en el caso de `download`, el servidor le enviara en 4 bytes el tamaño del archivo al cliente, y luego el archivo en sí. De la misma manera, gracias al tamaño recibido, el cliente sabe exactamente cuantos bytes esperar.
+En el caso de un `upload`, luego de que el servidor reciba este mensaje, el siguiente envíado por el cliente es el archivo en sí. Utilizando el tamaño recibido, el servidor sabe exactamente cuántos bytes va a recibir. Por otro lado, en el caso de `download`, el servidor le enviará en 4 bytes el tamaño del archivo al cliente, y luego el archivo en sí. De la misma manera, gracias al tamaño recibido, el cliente sabe exactamente cuántos bytes esperar.
 
 > La capa de transporte del stack TCP/IP ofrece dos protocolos: TCP y UDP. ¿Qué servicios proveen dichos protocolos? ¿Cuáles son sus características? ¿Cuándo es apropiado utilizar cada uno?
 
@@ -348,9 +349,10 @@ Por otra parte, TCP se suele usar en el resto de los casos donde la confiabilida
 
 - Realizar las implementaciones de los protocolos considerando que ambos son emisores y receptores, más allá de la base teórica asumiendo que uno es solo receptor y el otro solo emisor.
 - Mantener consistencia en todos los protocolos para mantener separada la aplicación y la implementación de los protocolos. El resultado es un diseño orientado a objetos que se podría mejorar.
-- El cierre de conexión, asegurando de que no se quede uno de los lados esperando a un ACK.
+- El cierre de conexión, asegurándose de que no se quede uno de los lados esperando a un ACK.
 
 # Conclusión
 
 Tras completar las 3 implementaciones pedidas por la cátedra, pudimos compararlas en cuanto al tiempo que tardaban en subir y descargar archivos randoms de diferentes tamaños. Como era de esperarse, la implementación con Go-Back-N es más rápida que Stop & Wait, esto se debe a que la primera implementación es menos susceptible a la pérdida de ACKs. No obstante, nuestra implementación de Go-Back-N es más lenta que nuestra implementación con protocolo TCP, por lo que podemos afirmar que aún es posible mejorar nuestras implementaciones ya que cumplimos con el objetivo de garantizar la transferencia de datos fiables pero no conseguimos alcanzar un protocolo comparable con TCP.
 Teniendo en cuenta que nuestras implementaciones son confiables, pero no tan performantes como TCP a nivel capa de aplicación, hoy en día no utilizaremos las dos implementaciones RDT, sino que usamos el estándar ya existente de TCP que no solo es mucho más performante sino que además nos provee de más servicios y garantías.
+
