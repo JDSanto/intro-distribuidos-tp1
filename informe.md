@@ -317,3 +317,7 @@ Por otra parte, TCP se suele usar en el resto de los casos donde la confiabilida
 - La mayor dificultad del trabajo práctico es la implementación de un envío confiable por sobre un protocolo no confiable (UDP)... seguir
 
 # Conclusión
+
+Tras completar las 3 implementaciones pedidas por la cátedra, pudimos compararlas en cuanto al tiempo que tardaban en subir y descargar archivos randoms de diferentes tamaños. Como era de esperarse, la implementación con Go-Back-N es más rápida que Stop & Wait, esto se debe a que la primera implementación es menos susceptible a la pérdida de ACKs. No obstante, nuestra implementación de Go-Back-N es más lenta que nuestra implementación con protocolo TCP, por lo que podemos afirmar que aún es posible mejorar nuestras implementaciones ya que cumplimos con el objetivo de garantizar la transferencia de datos fiables pero no conseguimos alcanzar un protocolo comparable con TCP.
+Teniendo en cuenta que nuestras implementaciones son confiables, pero no tan performantes como TCP a nivel capa de aplicación, hoy en día no utilizaremos las dos implementaciones RDT, sino que usamos el estándar ya existente de TCP que no solo es mucho más performante sino que además nos provee de muchísimos más servicios.
+Por último, cabe destacar que nos pareció un trabajo muy interesante que nos permitió comprender los protocolos con mayor facilidad y en mayor profundidad.
