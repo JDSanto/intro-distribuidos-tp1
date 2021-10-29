@@ -1,4 +1,5 @@
 import socket
+
 from lib.socket import Socket
 
 
@@ -72,7 +73,9 @@ class RDTSocket(Socket):
         """
         Receive an UDPPackage through the socket
         """
-        data = self.conn_socket.receive_data(buffer_size + RDTSegment.HEADER_SIZE, blocking)
+        data = self.conn_socket.receive_data(
+            buffer_size + RDTSegment.HEADER_SIZE, blocking
+        )
         return RDTSegment.unpack(data) if data else None
 
     def receive_data(self, buffer_size):

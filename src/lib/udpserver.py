@@ -1,6 +1,6 @@
+import select
 import socket
 import threading
-import select
 
 from lib import utils
 from lib.server import Server

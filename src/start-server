@@ -1,16 +1,16 @@
 #!/usr/bin/python3
-import signal
 import logging
-import traceback
 import os
+import signal
 import threading
+import traceback
 
+from lib import utils
+from lib.gbn import GBNServer
 from lib.metadata import Metadata
+from lib.stopandwait import SaWServer
 from lib.tcpserver import TCPServer
 from lib.udpserver import UDPServer
-from lib.stopandwait import SaWServer
-from lib.gbn import GBNServer
-from lib import utils
 from lib.utils import METADATA_FIXED_SIZE
 
 

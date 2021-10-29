@@ -1,8 +1,8 @@
+import select
 import socket
 
 from lib import utils
 from lib.socket import Socket
-import select
 
 
 class UDPSocket(Socket):

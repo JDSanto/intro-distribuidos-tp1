@@ -135,7 +135,7 @@ def validate_args(args):
     if args.verbose:
         args.verbose = VERBOSITY[args.verbose]
     if args.quiet:
-        logging.basicConfig(level=logging.CRITICAL)
+        logging.disable(level=logging.CRITICAL + 1)
     if not args.host or not args.host.replace(".", "").isdigit():
         args.host = DEFAULT_HOST
     if args.port:

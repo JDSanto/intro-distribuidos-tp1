@@ -1,9 +1,9 @@
 import socket
 
-from lib.server import Server
-from lib.udpsocket import UDPSocket
-from lib.udpserver import UDPServer
 from lib.rdt import RDTSegment, RDTSocket
+from lib.server import Server
+from lib.udpserver import UDPServer
+from lib.udpsocket import UDPSocket
 
 
 class GBNSocket(RDTSocket):
