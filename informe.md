@@ -224,7 +224,87 @@ Otros cambios en los métodos:
 
 # Análisis
 
-Se ejecuta el comando `upload-file` con los protocolos y diferentes tamaño de archivo, y porcentajes de pérdidas de paquetes simulados con el comando comcast.
+Se ejecuta el comando `upload-file` con los protocolos y diferentes tamaño de archivo, y porcentajes de pérdidas de paquetes simulados con el comando comcast:
+
+```sh
+~/go/bin/comcast --device=lo0 --packet-loss=5%
+```
+
+<!-- Probar combinaciones de
+
+archivo 100KB comcast 0%
+tcp: 0m0.872s
+udp+gbn: 0m0.938s
+udp+saw: 0m0.965s
+
+archivo 1000KB comcast 0%
+tcp: 0m0.969s
+udp+gbn: 0m1.573s
+udp+saw: 0m1.902s
+
+archivo 5000KB comcast 0%
+tcp: 0m1.352s
+udp+gbn: 0m3.852s
+udp+saw: 0m5.813s
+
+
+
+archivo 100KB comcast 5%
+tcp: 0m1.305s
+udp+gbn: 0m2.980s
+udp+saw: 0m3.028s
+
+archivo 1000KB comcast 5%
+tcp: 0m1.283s
+udp+gbn: 0m16.317s
+udp+saw: 0m23.384s
+
+archivo 5000KB comcast 5%
+tcp: 0m4.667s
+udp+gbn: 1m13.779s
+udp+saw: 2m0.011s
+
+
+archivo 100KB comcast 10%
+tcp: 0m1.283s
+udp+gbn: 0m3.402s
+udp+saw: 0m6.094s
+
+archivo 1000KB comcast 10%
+tcp: 0m2.428s
+udp+gbn: 0m29.366s
+udp+saw: 0m48.091s
+
+archivo 5000KB comcast 10%
+tcp: 0m12.445s
+udp+gbn: 2m15.152s
+udp+saw: 4m4.115s
+
+
+archivo 100KB comcast 15%
+tcp: 0m0.903s
+udp+gbn: 0m4.274s
+udp+saw: 0m9.198s
+
+archivo 1000KB comcast 15%
+tcp: 0m6.179s
+udp+gbn: 0m39.944s
+udp+saw: 1m18.090s
+
+archivo 5000KB comcast 15%
+tcp: 0m28.382s
+udp+gbn: 3m17.521s
+udp+saw: 6m37.957s
+
+
+
+
+Package loss: 0%, 5%, 10
+
+
+%, 15%-->
+
+Para un archivo de 500KBs:
 
 <!-- TODO -->
 
@@ -314,6 +394,10 @@ Por otra parte, TCP se suele usar en el resto de los casos donde la confiabilida
 
 # Dificultades encontradas
 
-- La mayor dificultad del trabajo práctico es la implementación de un envío confiable por sobre un protocolo no confiable (UDP)... seguir
+<!-- ysi es la gracia   - La mayor dificultad del trabajo práctico es la implementación de un envío confiable por sobre un protocolo no confiable (UDP)... seguir -->
+
+- Realizar las implementaciones de los protocolos considerando que ambos son emisores y receptores, más allá de la base teórica asumiendo que uno es solo receptor y el otro solo emisor.
+- Mantener consistencia en todos los protocolos para mantener separada la aplicación y la implementación de los protocolos. El resultado es un diseño orientado a objetos que se podría mejorar.
+- El cierre de conexión, asegurando de que no se quede uno de los lados esperando a un ACK.
 
 # Conclusión
