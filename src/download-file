@@ -3,12 +3,12 @@
 from lib.tcpsocket import TCPSocket
 from lib.udpsocket import UDPSocket
 from lib.stopandwait import SaWSocket
+from lib.gbn import GBNSocket
+from lib.metadata import Metadata
 
 from lib import utils
 import logging
 import os
-
-from Metadata import Metadata
 
 
 def download_file(socket, filename, dest_folder, logger):
@@ -33,7 +33,10 @@ def download_file(socket, filename, dest_folder, logger):
             file_size -= len(data)
 
     logger.info("File downloaded")
+
     socket.send_data(utils.Status.OK.value)
+
+    socket.send_data(utils.Command.SHUTDOWN.value)
 
     socket.close()
 
@@ -59,6 +62,9 @@ if __name__ == "__main__":
     elif args.protocol == utils.Protocol.SAW:
         client = SaWSocket.connect("localhost", args.port, logger)
         logger.info("Starting File Transfer App with UDP+SaW...")
+    elif args.protocol == utils.Protocol.GBN:
+        client = GBNSocket.connect("localhost", args.port, logger)
+        logger.info("Starting File Transfer App with UDP+GBN...")
 
     download_file(client, args.filename, args.dst, logger)
     logger.info("File transfer complete")

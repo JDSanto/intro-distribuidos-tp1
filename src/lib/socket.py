@@ -1,5 +1,4 @@
 class Socket:
-
     def __init__(self, logger):
         """
         Create the socket object

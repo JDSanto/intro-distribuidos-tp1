@@ -40,7 +40,11 @@ check_server_status() {
 
 generate_file() {
     # generates a file with $1 characters
-    head -c $1 /dev/urandom > $TEST_FILE
+    if [ $1 -lt 1000 ]; then
+    	head -c $1 /dev/urandom > $TEST_FILE
+    else
+		dd if=/dev/urandom of=$TEST_FILE bs=1000 count=$(($1 / 1000)) 2> /dev/null
+	fi 
 }
 
 client_upload_file() {
@@ -127,7 +131,9 @@ if [ "$2" == '-v' ]; then
     STD_REDDIR='/dev/tty'
 fi
 
-for i in 100 500 1000 5000 10000 100000 500000; do
+start_server $1
+
+for i in 100 1000 10000 100000 1000000; do
     test_system $1 $i
     sleep 0.25
     if [ $ERROR -ne 0 ]; then

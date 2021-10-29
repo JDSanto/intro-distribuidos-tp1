@@ -5,10 +5,11 @@ import traceback
 import os
 import threading
 
-from Metadata import Metadata
+from lib.metadata import Metadata
 from lib.tcpserver import TCPServer
 from lib.udpserver import UDPServer
 from lib.stopandwait import SaWServer
+from lib.gbn import GBNServer
 from lib import utils
 from lib.utils import METADATA_FIXED_SIZE
 
@@ -44,11 +45,11 @@ def send_file(socket, metadata, dest_folder, logger):
     filename = metadata.filename
 
     # Send file size
+    logger.info("Sending file size")
     file_size = os.path.getsize(os.path.join(dest_folder, filename))
     socket.send_data(file_size.to_bytes(utils.INT_SIZE, byteorder="big"))
 
     # Send file
-    # TODO: check if file exists, send error if it doesn't
     logger.info("Sending file")
     with open(os.path.join(dest_folder, filename), "rb") as f:
         while file_size > 0:
@@ -63,6 +64,7 @@ def send_file(socket, metadata, dest_folder, logger):
         logger.error("File transfer failed")
     else:
         logger.info("File transfered")
+
     logger.info(f"Finished sending: {filename}")
 
 
@@ -76,7 +78,10 @@ def serve(socket, dest_folder, logger):
     if metadata.is_download():
         send_file(socket, metadata, dest_folder, logger)
 
-    socket.close()
+    # Receive shutdown
+    data = socket.receive_data(1)
+
+    socket.close(wait=True)
 
 
 def start_server(server, dest_folder, logger):
@@ -111,6 +116,9 @@ if __name__ == "__main__":
     elif args.protocol == utils.Protocol.SAW:
         server = SaWServer("localhost", args.port, logger)
         logger.info("Starting SaW server...")
+    elif args.protocol == utils.Protocol.GBN:
+        server = GBNServer("localhost", args.port, logger)
+        logger.info("Starting File Transfer App with UDP+GBN...")
 
     try:
         start_server(server, args.dest, logger)

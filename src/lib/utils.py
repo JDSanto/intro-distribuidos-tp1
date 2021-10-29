@@ -17,6 +17,7 @@ METADATA_FIXED_SIZE = 64
 class Command(Enum):
     UPLOAD = b"u"
     DOWNLOAD = b"d"
+    SHUTDOWN = b"s"
 
 
 class Status(Enum):
@@ -127,7 +128,6 @@ def parse_server_start():
         required=True,
         default=DEFAULT_DEST,
     )
-    parser.add_argument("--name", dest="filename")
     return validate_args(parser.parse_args())
 
 
@@ -135,16 +135,10 @@ def validate_args(args):
     if args.verbose:
         args.verbose = VERBOSITY[args.verbose]
     if args.quiet:
-        # TODO encontrar un NOSET que funque
         logging.basicConfig(level=logging.CRITICAL)
     if not args.host or not args.host.replace(".", "").isdigit():
         args.host = DEFAULT_HOST
     if args.port:
         if args.port < 1024 or args.port > 65535:
             args.port = DEFAULT_PORT
-    if args.filename:
-        # FIXME: this changes if the command is upload or download.
-        # if not os.path.exists(args.filename):
-        #     raise Exception(f'File {args.filename} not found')
-        pass
     return args
