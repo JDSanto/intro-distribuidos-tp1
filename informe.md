@@ -261,7 +261,7 @@ Archivo de 5MB:
 
 # Preguntas a responder
 
-> _ Describa la arquitectura Cliente-Servidor._
+> _Describa la arquitectura Cliente-Servidor._
 
 La arquitectura Cliente-Servidor se caracteriza por tener un host siempre activo, llamado servidor, que atiende las solicitudes de otros hosts, llamados clientes. Es decir que los clientes no pueden comunicarse directamente entre sí.
 
@@ -271,7 +271,7 @@ Algunos ejemplos de arquitecturas cliente-servidor más conocidas son: Web, e-ma
 
 (Agregar imagen 2.2 del libro, pag 117)
 
-> ¿Cuál es la función de un protocolo de capa de aplicación?
+> _¿Cuál es la función de un protocolo de capa de aplicación?_
 
 Un protocolo de capa de aplicación determina cómo se comunican entre sí los procesos de aplicaciones que corren en diferentes sistemas finales. Para ello define:
 
@@ -279,7 +279,7 @@ Un protocolo de capa de aplicación determina cómo se comunican entre sí los p
 - Los campos que tiene cada tipo de mensaje y el significado de cada uno.
 - Reglas para determinar cuándo y cómo un proceso envía y responde mensajes.
 
-> Detalle el protocolo de aplicación desarrollado en este trabajo.
+> _Detalle el protocolo de aplicación desarrollado en este trabajo._
 
 El protocolo desarrollado para los comandos de `upload` y `download` es un sencillo _handshake_ donde el cliente le envía primero al servidor una metadata del archivo que va solicitar cargar o descargar, y luego el archivo en sí.
 
@@ -305,7 +305,7 @@ Un diagrama de la estructura es el siguiente:
 
 En el caso de un `upload`, luego de que el servidor reciba este mensaje, el siguiente envíado por el cliente es el archivo en sí. Utilizando el tamaño recibido, el servidor sabe exactamente cuántos bytes va a recibir. Por otro lado, en el caso de `download`, el servidor le enviará en 4 bytes el tamaño del archivo al cliente, y luego el archivo en sí. De la misma manera, gracias al tamaño recibido, el cliente sabe exactamente cuántos bytes esperar.
 
-> La capa de transporte del stack TCP/IP ofrece dos protocolos: TCP y UDP. ¿Qué servicios proveen dichos protocolos? ¿Cuáles son sus características? ¿Cuándo es apropiado utilizar cada uno?
+> _La capa de transporte del stack TCP/IP ofrece dos protocolos: TCP y UDP. ¿Qué servicios proveen dichos protocolos? ¿Cuáles son sus características? ¿Cuándo es apropiado utilizar cada uno?_
 
 La capa de transporte tiene como principal objetivo extender el servicio de entrega de la capa de red a la capa de aplicación, entre procesos corriendo en diferentes sistemas finales. Dentro del stack TCP/IP se tienen los protocolos UDP y TCP, cada uno con sus respectivos servicios y características.
 
