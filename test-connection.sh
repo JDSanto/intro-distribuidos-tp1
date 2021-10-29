@@ -22,7 +22,11 @@ start_server() {
 
 stop_server() {
     # stops the server, sets the server PID to 0
-    kill $SERVER_PID
+    if ps -p "$SERVER_PID" > /dev/null
+    then
+        kill "$SERVER_PID"
+    fi
+
     SERVER_PID=0
 }
 
@@ -31,7 +35,10 @@ check_server_status() {
     # exits the program if the last background job exited
     # regardless of status code
 
-    kill -0 "$SERVER_PID"
+    if ps -p "$SERVER_PID" > /dev/null
+    then
+        kill -0 "$SERVER_PID"
+    fi
     if [ $? -ne 0 ]; then
         echo "ERROR: Server exited unexpectedly"
         exit 1
@@ -44,7 +51,7 @@ generate_file() {
     	head -c $1 /dev/urandom > $TEST_FILE
     else
 		dd if=/dev/urandom of=$TEST_FILE bs=1000 count=$(($1 / 1000)) 2> /dev/null
-	fi 
+	fi
 }
 
 client_upload_file() {
@@ -148,4 +155,3 @@ if [ $ERROR -ne 0 ]; then
 else
     exit 0
 fi
-
