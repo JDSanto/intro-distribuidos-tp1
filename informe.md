@@ -150,6 +150,31 @@ Un protocolo de capa de aplicación determina cómo se comunican entre sí los p
 
 > Detalle el protocolo de aplicación desarrollado en este trabajo.
 
+El protocolo desarrollado para los comandos de `upload` y `download` es un sencillo _handshake_ donde el cliente le envía primero al servidor una metadata del archivo que va solicitar cargar o descargar, y luego el archivo en sí.
+
+Esta metadata de la solicitud al servidor consiste en un mensaje de 64 bytes, de los cuales el primero se encarga de indicar el tipo de comando que se va a ejecutar (una `u` para `upload` y una `d` para `download`) y el resto de los bytes contienen el nombre del archivo (59 bytes, con padding), y, en el caso de ser un `upload`, el tamaño de este (los 4 bytes restants).
+
+Un diagrama de la estructura es el siguiente:
+
+- UPLOAD
+
+```
++--------++----------------++---------------+
+| OP (1) || File Name (59) || File Size (4) |
++--------++----------------++---------------+
+```
+
+- DOWNLOAD
+
+```
++--------++----------------++---------------+
+| OP (1) || File Name (59) || Padding (4)   |
++--------++----------------++---------------+
+```
+
+En el caso de un `upload`, luego de que el servidor reciba este mensaje, el siguiente envíado por el cliente es el archivo en sí. Utilizando el tamaño recibido, el servidor sabe exactamente cuantos bytes va a recibir. Por otro lado, en el caso de `download`, el servidor le enviara en 4 bytes el tamaño del archivo al cliente, y luego el archivo en sí. De la misma manera, gracias al tamaño recibido, el cliente sabe exactamente cuantos bytes esperar.
+
+
 > La capa de transporte del stack TCP/IP ofrece dos protocolos: TCP y UDP. ¿Qué servicios proveen dichos protocolos? ¿Cuáles son sus características? ¿Cuándo es apropiado utilizar cada uno?
 
 La capa de transporte tiene como principal objetivo extender el servicio de entrega de la capa de red a la capa de aplicación, entre procesos corriendo en diferentes sistemas finales. Dentro del stack TCP/IP se tienen los protocolos UDP y TCP, cada uno con sus respectivos servicios y características.
