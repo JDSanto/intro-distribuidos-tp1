@@ -49,6 +49,8 @@ def upload_file(socket, filename, filedir, logger):
     else:
         logger.info("File uploaded")
 
+    socket.send_data(utils.Command.SHUTDOWN.value)
+
     socket.close()
 
 

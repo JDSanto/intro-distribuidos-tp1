@@ -16,6 +16,7 @@ MAX_DG_SIZE = (1 << 16) - 1
 class Command(Enum):
     UPLOAD = b"u"
     DOWNLOAD = b"d"
+    SHUTDOWN = b"s"
 
 
 class Status(Enum):

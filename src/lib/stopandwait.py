@@ -45,9 +45,9 @@ class SaWSocket(RDTSocket):
 
         self.tries = 0
 
-    def close(self):
+    def close(self, wait=False):
         self.logger.debug("Closing SaW socket")
-        RDTSocket.close(self)
+        RDTSocket.close(self, wait)
 
 
 class SaWServer(Server):

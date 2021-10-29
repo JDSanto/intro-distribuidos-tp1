@@ -3,8 +3,8 @@ from lib.socket import Socket
 
 
 class RDTSegment:
-    SEQ_NUM_SIZE = 8
-    PADDING = SEQ_NUM_SIZE + 1
+    SEQ_NUM_SIZE = 3
+    HEADER_SIZE = SEQ_NUM_SIZE + 1
 
     def __init__(self, data, seq_num, ack):
         self.data = data
@@ -42,7 +42,7 @@ class RDTSegment:
 
 
 class RDTSocket(Socket):
-    TIMEOUT = 0.05
+    TIMEOUT = 0.1
     N_TRIES = 10
 
     def __init__(self, conn_socket, logger):
@@ -72,7 +72,7 @@ class RDTSocket(Socket):
         """
         Receive an UDPPackage through the socket
         """
-        data = self.conn_socket.receive_data(buffer_size + RDTSegment.PADDING, wait)
+        data = self.conn_socket.receive_data(buffer_size + RDTSegment.HEADER_SIZE, wait)
         return RDTSegment.unpack(data) if data else None
 
     def receive_data(self, buffer_size):
@@ -109,11 +109,10 @@ class RDTSocket(Socket):
         self.tries = 0
         return pkt.data
 
-    def close(self):
+    def close(self, wait=False):
         # Wait for resends due to lost outgoing acks
-        
         self.tries = 0
-        while self.tries < RDTSocket.N_TRIES:
+        while wait and self.tries < RDTSocket.N_TRIES:
             try:
                 pkt = self.receive_pkt(0)
                 if not pkt.ack:
@@ -121,5 +120,6 @@ class RDTSocket(Socket):
             except socket.timeout:
                 self.tries += 1
                 pass
-            
+
+        self.logger.debug("Closing UDP socket")
         self.conn_socket.close()

@@ -21,4 +21,3 @@ class Socket:
 
     def close(self):
         raise NotImplementedError()
-

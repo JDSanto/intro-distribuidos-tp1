@@ -40,7 +40,11 @@ check_server_status() {
 
 generate_file() {
     # generates a file with $1 characters
-    head -c $1 /dev/urandom > $TEST_FILE
+    if [ $1 -lt 1000 ]; then
+    	head -c $1 /dev/urandom > $TEST_FILE
+    else
+		dd if=/dev/urandom of=$TEST_FILE bs=1000 count=$(($1 / 1000)) 2> /dev/null
+	fi 
 }
 
 client_upload_file() {

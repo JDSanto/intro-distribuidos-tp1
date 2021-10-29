@@ -92,7 +92,10 @@ def serve(socket, dest_folder, logger):
     if command == utils.Command.DOWNLOAD:
         send_file(socket, dest_folder, logger)
 
-    socket.close()
+    # Receive shutdown
+    data = socket.receive_data(1)
+
+    socket.close(wait=True)
 
 
 def start_server(server, dest_folder, logger):

@@ -7,7 +7,7 @@ from lib.rdt import RDTSegment, RDTSocket
 
 
 class GBNSocket(RDTSocket):
-    N = 10
+    WINDOW_SIZE = 10
 
     def __init__(self, conn_socket, logger):
         super().__init__(conn_socket, logger)
@@ -19,14 +19,14 @@ class GBNSocket(RDTSocket):
         rdt_socket = GBNSocket(udp_socket, logger)
         return rdt_socket
 
-    def send_data(self, data):
+    def send_data(self, data=b''):
         sent = False
 
         # If there is room in the window sent the pkt
-        if len(self.in_flight) < GBNSocket.N:
+        if len(self.in_flight) < GBNSocket.WINDOW_SIZE:
             self.seq_number = RDTSegment.increment(self.seq_number)
             pkt = self.send_pkt(data)
-            self.in_flight.append((pkt.seq_num, data))
+            self.in_flight.append(pkt)
             sent = True
         else:
             self.logger.debug("window is full.")
@@ -47,7 +47,7 @@ class GBNSocket(RDTSocket):
         if pkt.ack:
             self.logger.debug(f"got ACK. ending. pkt=[{pkt}]")
             while len(self.in_flight):
-                if pkt.seq_num >= self.in_flight[0][0]:
+                if pkt.seq_num >= self.in_flight[0].seq_num:
                     self.in_flight.pop(0)
                     return True
                 else:
@@ -66,15 +66,16 @@ class GBNSocket(RDTSocket):
                 self.tries = 0
         except socket.timeout:
             # Re-send unacknowledged pkts
-            self.logger.debug(f"got timeout. resending from seq_num {self.in_flight[0][0]}")
+            self.logger.debug(f"got timeout. resending from seq_num {self.in_flight[0].seq_num}")
             self.tries += 1
-            for (seq_num, data) in self.in_flight:
-                pkt = self.send_pkt(data, seq_number=seq_num)
+            for pkt in self.in_flight:
+                self.send_pkt(pkt.data, seq_number=pkt.seq_num)
 
     def await_empty_send_queue(self):
         while len(self.in_flight):
             self.logger.debug(
-                f"Still {len(self.in_flight)} packets in flight. {self.in_flight[0][0]} to {self.in_flight[-1][0]}")
+                (f"Still {len(self.in_flight)} packets in flight. "
+                 f"{self.in_flight[0].seq_num} to {self.in_flight[-1].seq_num}"))
             self.await_ack()
             if self.tries == RDTSocket.N_TRIES:
                 raise Exception("Connection lost")
@@ -84,12 +85,12 @@ class GBNSocket(RDTSocket):
         self.await_empty_send_queue()
         return RDTSocket.receive_data(self, buffer_size)
 
-    def close(self):
+    def close(self, wait=False):
         self.logger.debug("Closing GBN socket")
-        # Wait to confirm in flight pkts before closing
+
         self.await_empty_send_queue()
 
-        RDTSocket.close(self)
+        RDTSocket.close(self, wait)
 
 
 class GBNServer(Server):

@@ -36,13 +36,15 @@ def download_file(socket, filename, dest_folder, logger):
     logger.info("Downloading file")
     with open(os.path.join(dest_folder, filename), "wb") as f:
         while file_size > 0:
-            logger.info(f"Remaining bytes {file_size}")
             data = socket.receive_data(min(utils.MSG_SIZE, file_size))
             f.write(data)
             file_size -= len(data)
 
     logger.info("File downloaded")
+
     socket.send_data(utils.Status.OK.value)
+
+    socket.send_data(utils.Command.SHUTDOWN.value)
 
     socket.close()
 

@@ -42,7 +42,7 @@ class UDPSocketMT(Socket):
                 else:
                     return None
 
-    def close(self):
+    def close(self, wait=False):
         self.server._close(self.addr)
 
 
