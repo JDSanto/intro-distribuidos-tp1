@@ -211,13 +211,14 @@ En cuanto a los métodos importantes:
 
 Al igual que Stop and Wait, este protocolo asegura que la información no se pierda y llegue en orden correcto. A diferencia del anterior, el emisor no espera a recibir un ACK para seguir enviando paquetes, pero mantiene una ventana de paquetes que aún no recibieron el ACK. El protocolo implementado no utiliza buffering, es decir que el receptor descarta los paquetes fuera de orden.
 
-Se utiliza el mismo segmento `RDTSegment`, y por otro lado el socket `GBNSocket` tiene los mismos atributos que su clase padre `RDTSocket`, con la diferencia de que tendrá la ventana de paquetes sin enviar `in-flight`.
+Se utiliza el mismo segmento `RDTSegment`, y por otro lado el socket `GBNSocket` tiene los mismos atributos que su clase padre `RDTSocket`, con la diferenciade que tendrá la ventana de paquetes enviados `in-flight` que aún no se recibió su correspondiente ACK.
 
 Otros cambios en los métodos:
 
-- `send_data`: Si hay menos de `N` paquetes que no recibieron el ACK en la ventana `in-flight`, envía el paquete y lo agrega a la ventana. Toma solo un intento para recibir un ACK, y sigue en cualquier caso. En el caso contrario, se queda esperando a que reciba ACKs por parte del receptor.
+- `send_data`: Si hay menos de `N` paquetes que no recibieron el ACK en la ventana `in-flight`, envía el paquete y lo agrega a la ventana. Toma solo un intento para recibir un ACK, y sigue en cualquier caso. Si la ventana `in-flight` está completa, se queda esperando a que reciba ACKs por parte del receptor. 
 - `await_ack`: En el caso de que haya que esperar a un ACK, se llama a este método el cuál espera a un ACK de cualquiera de los paquetes encontrados en la ventana. Cada ACK elimina todos los paquetes de la lista hasta el número de secuencia correspondiente. Si se llega a un timeout, se reenvían los paquetes.
-- `receive_data`: Igual a Stop and Wait con la diferencia de que se envían todos los paquetes de la ventana `in-flight` hasta recibir ACKs antes de recibir paquetes.
+- `receive_data`: Igual a Stop and Wait con la diferencia de que se envían todos los paquetes de la ventana `in-flight` (esperando a los ACKs para asegurar su envío correcto), antes de comenzar a recibir paquetes nuevos.
+
 
 # Análisis
 
