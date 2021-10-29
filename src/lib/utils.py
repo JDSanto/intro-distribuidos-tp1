@@ -17,6 +17,7 @@ METADATA_FIXED_SIZE = 64
 class Command(Enum):
     UPLOAD = b"u"
     DOWNLOAD = b"d"
+    SHUTDOWN = b"s"
 
 
 class Status(Enum):
