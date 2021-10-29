@@ -215,10 +215,9 @@ Se utiliza el mismo segmento `RDTSegment`, y por otro lado el socket `GBNSocket`
 
 Otros cambios en los métodos:
 
-- `send_data`: Si hay menos de `N` paquetes que no recibieron el ACK en la ventana `in-flight`, envía el paquete y lo agrega a la ventana. Toma solo un intento para recibir un ACK, y sigue en cualquier caso. Si la ventana `in-flight` está completa, se queda esperando a que reciba ACKs por parte del receptor. 
+- `send_data`: Si hay menos de `N` paquetes que no recibieron el ACK en la ventana `in-flight`, envía el paquete y lo agrega a la ventana. Toma solo un intento para recibir un ACK, y sigue en cualquier caso. Si la ventana `in-flight` está completa, se queda esperando a que reciba ACKs por parte del receptor.
 - `await_ack`: En el caso de que haya que esperar a un ACK, se llama a este método el cuál espera a un ACK de cualquiera de los paquetes encontrados en la ventana. Cada ACK elimina todos los paquetes de la lista hasta el número de secuencia correspondiente. Si se llega a un timeout, se reenvían los paquetes.
 - `receive_data`: Igual a Stop and Wait con la diferencia de que se envían todos los paquetes de la ventana `in-flight` (esperando a los ACKs para asegurar su envío correcto), antes de comenzar a recibir paquetes nuevos.
-
 
 # Análisis
 
@@ -232,32 +231,30 @@ El tiempo de prueba es lo que demora en subir un archivo con `upload-file` y vol
 
 Archivo de 100KB:
 
-|     |    TCP    |  Go-Back-N |  Stop and Wait |
-|:---:|:---------:|:----------:|:--------------:|
-|  0% | 00:00.872s |  00:00.965s |    00:00.938s   |
-|  5% | 00:01.305s |  00:03.028s |    00:02.980s   |
-| 10% | 00:01.283s |  00:03.402s |    00:06.094s   |
-| 15% | 00:00.903s |  00:04.274s |    00:09.198s   |
+|     |    TCP     | Go-Back-N  | Stop and Wait |
+| :-: | :--------: | :--------: | :-----------: |
+| 0%  | 00:00.872s | 00:00.965s |  00:00.938s   |
+| 5%  | 00:01.305s | 00:03.028s |  00:02.980s   |
+| 10% | 00:01.283s | 00:03.402s |  00:06.094s   |
+| 15% | 00:00.903s | 00:04.274s |  00:09.198s   |
 
 Archivo de 1MB:
 
-|     |    TCP   | Go-Back-N | Stop and Wait |
-|:---:|:--------:|:---------:|:-------------:|
-|  0% | 00:00.969s |  00:01.573s |    00:01.902s   |
-|  5% | 00:01.283s | 00:16.317s |   00:23.384s   |
-| 10% | 00:02.428s | 00:29.366s |   00:48.091s   |
-| 15% | 00:06.179s | 00:39.944s |   01:18.090s   |
-
+|     |    TCP     | Go-Back-N  | Stop and Wait |
+| :-: | :--------: | :--------: | :-----------: |
+| 0%  | 00:00.969s | 00:01.573s |  00:01.902s   |
+| 5%  | 00:01.283s | 00:16.317s |  00:23.384s   |
+| 10% | 00:02.428s | 00:29.366s |  00:48.091s   |
+| 15% | 00:06.179s | 00:39.944s |  01:18.090s   |
 
 Archivo de 5MB:
 
-|     |    TCP    | Go-Back-N | Stop and Wait |
-|:---:|:---------:|:---------:|:-------------:|
-|  0% |  00:01.352s |  00:03.852s |    00:05.813s   |
-|  5% |  00:04.667s | 01:013.779s |    02:00.011s   |
-| 10% | 00:12.445s | 02:15.152s |    04:04.115s   |
-| 15% | 00:28.382s | 03:17.521s |   06:37.957s   |
-
+|     |    TCP     |  Go-Back-N  | Stop and Wait |
+| :-: | :--------: | :---------: | :-----------: |
+| 0%  | 00:01.352s | 00:03.852s  |  00:05.813s   |
+| 5%  | 00:04.667s | 01:013.779s |  02:00.011s   |
+| 10% | 00:12.445s | 02:15.152s  |  04:04.115s   |
+| 15% | 00:28.382s | 03:17.521s  |  06:37.957s   |
 
 # Preguntas a responder
 
@@ -268,8 +265,6 @@ La arquitectura Cliente-Servidor se caracteriza por tener un host siempre activo
 Para que un cliente pueda contactar al servidor, este último cuenta con una dirección fija y conocida, llamada dirección IP. Por otro lado, el servidor no conoce previamente la dirección de los clientes.
 
 Algunos ejemplos de arquitecturas cliente-servidor más conocidas son: Web, e-mail y FTP (como es el caso de este TP).
-
-(Agregar imagen 2.2 del libro, pag 117)
 
 > _¿Cuál es la función de un protocolo de capa de aplicación?_
 
@@ -355,4 +350,3 @@ Por otra parte, TCP se suele usar en el resto de los casos donde la confiabilida
 
 Tras completar las 3 implementaciones pedidas por la cátedra, pudimos compararlas en cuanto al tiempo que tardaban en subir y descargar archivos randoms de diferentes tamaños. Como era de esperarse, la implementación con Go-Back-N es más rápida que Stop & Wait, esto se debe a que la primera implementación es menos susceptible a la pérdida de ACKs. No obstante, nuestra implementación de Go-Back-N es más lenta que nuestra implementación con protocolo TCP, por lo que podemos afirmar que aún es posible mejorar nuestras implementaciones ya que cumplimos con el objetivo de garantizar la transferencia de datos fiables pero no conseguimos alcanzar un protocolo comparable con TCP.
 Teniendo en cuenta que nuestras implementaciones son confiables, pero no tan performantes como TCP a nivel capa de aplicación, hoy en día no utilizaremos las dos implementaciones RDT, sino que usamos el estándar ya existente de TCP que no solo es mucho más performante sino que además nos provee de más servicios y garantías.
-
