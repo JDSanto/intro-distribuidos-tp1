@@ -46,12 +46,10 @@ class GBNSocket(RDTSocket):
     def process_ack(self, pkt):
         if pkt.ack:
             self.logger.debug(f"got ACK. ending. pkt=[{pkt}]")
-            while len(self.in_flight):
-                if pkt.seq_num >= self.in_flight[0].seq_num:
-                    self.in_flight.pop(0)
+            for i in range(len(self.in_flight)):
+                if self.in_flight[i].seq_num == pkt.seq_num:
+                    self.in_flight = self.in_flight[i + 1:]
                     return True
-                else:
-                    break
         else:
             # If the pkt was not an ack then it is dropped.
             self.logger.debug(f"Got unexpected data pkt [{pkt}]. Dropped.")

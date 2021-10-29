@@ -3,8 +3,8 @@ from lib.socket import Socket
 
 
 class RDTSegment:
-    SEQ_NUM_SIZE = 3
-    HEADER_SIZE = SEQ_NUM_SIZE + 1
+    SEQ_SIZE = 1
+    HEADER_SIZE = SEQ_SIZE * 2
 
     def __init__(self, data, seq_num, ack):
         self.data = data
@@ -17,8 +17,8 @@ class RDTSegment:
 
     @staticmethod
     def unpack(data):
-        seq_num = int.from_bytes(data[: RDTSegment.SEQ_NUM_SIZE], byteorder="big")
-        data = data[RDTSegment.SEQ_NUM_SIZE:]
+        seq_num = int.from_bytes(data[: RDTSegment.SEQ_SIZE], byteorder="big")
+        data = data[RDTSegment.SEQ_SIZE:]
 
         ack = int.from_bytes(data[: 1], byteorder="big")
         data = data[1:]
@@ -26,7 +26,7 @@ class RDTSegment:
         return RDTSegment(data, seq_num, ack)
 
     def to_bytes(self):
-        res = self.seq_num.to_bytes(RDTSegment.SEQ_NUM_SIZE, byteorder="big")
+        res = self.seq_num.to_bytes(RDTSegment.SEQ_SIZE, byteorder="big")
         res += self.ack.to_bytes(1, byteorder="big")
         res += self.data
         return res
@@ -38,7 +38,11 @@ class RDTSegment:
 
     @staticmethod
     def increment(seq_num):
-        return (seq_num + 1) % (1 << 8 * RDTSegment.SEQ_NUM_SIZE)
+        return (seq_num + 1) % (1 << 8 * RDTSegment.SEQ_SIZE)
+
+    @staticmethod
+    def increment(seq_num):
+        return (seq_num + 1) % (1 << 8 * RDTSegment.SEQ_SIZE)
 
 
 class RDTSocket(Socket):
