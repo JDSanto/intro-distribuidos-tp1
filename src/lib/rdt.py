@@ -46,7 +46,7 @@ class RDTSegment:
 
 
 class RDTSocket(Socket):
-    TIMEOUT = 0.1
+    TIMEOUT = 0.5
     N_TRIES = 10
 
     def __init__(self, conn_socket, logger):

@@ -71,7 +71,7 @@ Donde cada flag indica:
 - `p/--port`: Indica el puerto
 - `-s/--src`: Indica el path del archivo a subir.
 - `-n/--name`: Nombre del archivo a subir.
-- `-P/--protocol`: Para indicar el protocolo a utilizar. En el mismo se puede ingresar "tcp" para utilizar el protocolo de TCP, "udp" para usar UDP, "udp+saw" para usar UDP con la implementación de Stop and Wait y "udp+gbn" para usar UDP con el protocolo de Go-Back-N.
+- `-P/--protocol`: Para indicar el protocolo a utilizar. Los posibles valores son `tcp`, `udp`, `udp+saw` (Stop and Wait), `udp+gbn` (Go-Back-N).
 
 En nuestra implementación, sin importar el protocolo, esta operación sigue los siguientes pasos:
 1. Crea un Socket con el protocolo correspondiente según el parámetro ingresado en `-P/--protocol` en el host "localhost" y el puerto pasado por parámetro.
@@ -102,8 +102,9 @@ Donde los flags indican:
 - `-v/--verbose`: Incrementa en una la verbosidad en cuanto al sistema de logueo del servidor
 - `-q/--quiet`: Decrementa en uno la verbosidad en cuanto al sistema de logueo.
 - `-H/--host`: Indica el la dirección IP del servicio
-- `p/--port`: Indica el puerto
+- `-p/--port`: Indica el puerto
 - `-s/--storage`: El path en el que se almacenan los archivos.
+- `-P/--protocol`: Para indicar el protocolo a utilizar. Los posibles valores son `tcp`, `udp`, `udp+saw` (Stop and Wait), `udp+gbn` (Go-Back-N).
 
 El servidor va a proveer el servicio de almacenamiento y descarga de archivos. Para ello seguirá los siguientes pasos:
 1. Una vez que recibe el comando de `start-server`, creará un nuevo servidor con la implementación del protocolo determinado dependiendo del flag `-P/--protocol` ingresado por parámetro.
@@ -122,6 +123,24 @@ El servidor va a proveer el servicio de almacenamiento y descarga de archivos. P
    3. Le envía el archivo al cliente de a segmentos de a `MSG_SIZE`.
    4. Espera que el cliente le mande un mensaje indicando que recibió el archivo correctamente.
 
+## Uso y pruebas
+
+<!-- TODO: Agregar más texto? -->
+
+Ejecución `download-file` y `start-server`, logs nivel `INFO`
+
+![](docs/ejecucion1.png)
+
+Ejecución `upload-file` y `start-server`, logs nivel `DEBUG`
+
+![](docs/ejecucion2.png)
+
+
+<!-- TODO: Dejar o sacar esto? -->
+Para facilitar el desarrollo, se cuenta con un script `test-connection.sh` el cuál ejecuta el ciclo de upload/download para archivos binarios aleatorios de diferente tamaño, asegurando de que el contenido del archivo no se vea alterado y no se haya finalizado la ejecución en una excepción.
+
+![](docs/pruebas.png)
+
 ## TCP
 
 TCP es un protocolo orientado a la conexión, es decir que antes de que el cliente y el servidor comienzan a enviarse datos entre sí, se debe cumplir un proceso de tres fases.
@@ -135,7 +154,7 @@ Por último se cuenta con un método `close()` encargado de cerrar el socket y p
 
 ### Servidor
 
-De la misma manera que el cliente, se cuenta con un método de inicialización que llamaremos `start()`. Este también crea un socket especificando de la misma manera que hace uso de IPv4 y TCP. Se asocua el numero de puerto del servidor y dejamos el socket a la escucha de solicitudes de conexión TCP del cliente. Tambien tenemos el método para cerrar la conexión.
+De la misma manera que el cliente, se cuenta con un método de inicialización que llamaremos `start()`. Este también crea un socket especificando de la misma manera que hace uso de IPv4 y TCP. Se asocia el numero de puerto del servidor y dejamos el socket a la escucha de solicitudes de conexión TCP del cliente. También tenemos el método para cerrar la conexión.
 
 Por último se cuenta con el método `wait_for_connection` que se va a encargar de dedicarle un TCPSocket al cliente concreto que se conecta al mismo. 
 
@@ -144,34 +163,56 @@ Por último se cuenta con el método `wait_for_connection` que se va a encargar 
 El protocolo UDP es un servicio sin conexión, no ofrece fiabilidad, ni control de flujos, ni control de congestión, es por eso que se implementa una versión utilizando el protocolo Stop & Wait y otra versión utilizando el protocolo Go-Back-N, con el objetivo de lograr una transferencia confiable al utilizar el protocolo.
 
 En una primera instancia se elabora un `UDPServer` y un `UDPSocket` que resuelven el protocolo sin agregar diferentes servicios fiables de transferencia de datos. 
-Algunos detalles interesantes de esta implementación mas sencilla incluyen:
-// TODO explicar 
-1. condvar y cola de data
-2. waitforconnection
+Como servicio adicional, `UDPServer` permite la conexión de múltiples clientes en simultáneo mediante demultiplexación: 
+
+- El servidor `UDPServer` utilizará un diccionario para reenviar los mensajes recibidos a los diferentes objetos `UDPSocketMT`, asociados a direcciones de clientes.
+- El objeto `UDPSocketMT` sobreescribe los métodos de `UDPSocket` para enviar y recibir datos.
+  - El método `receive_data` para recibir utiliza una cola de mensajes "a recibir" que va llenando el objeto `UDPServer`, y una condvar para esperar a mensajes nuevos si no tiene ninguno.
+  - El método `send_data` llama al mismo socket de `UDPServer` para enviar el dato correspondiente.
+
+
 ### Stop and Wait
 
 La implementación de este protocolo nos va a asegurar que la información no se pierda y que los paquetes se reciban en el orden correcto. La idea principal de este protocolo es que el cliente no envía paquetes hasta que recibe una señal ACK y el servidor por su parte se encarga de mandar este ACK siempre y cuando reciba un paquete valido. 
 Si el ACK no logra llegar al emisor antes de un cierto tiempo, llamado tiempo de espera, entonces el emisor, reenvía la trama otra vez. En caso de que el emisor sí reciba el ACK, entonces envía la siguiente trama.
 
 El **segmento** que utilizamos cuenta con:
-- `data`: La información que se envia en el paqiete
+- `data`: La información que se envía en el paquete
 - `seq_number` : El numero de secuencia que se le asigna al paquete enviado.
 - `ack`: Indica si es una señal ACK, es decir simplemente un mensaje que indica que se recibió el paquete de forma correcta.
-- `handshake`: Indica si es un paquete de inicialización de conexión o es un paquete de transferencia de datos una vez inicializada la conexión.
 
 Mientras que el **Socket** cuenta con:
 - `conn_socket`: La conexión al socket
-- `seq_number`: El numero de secuencia
+- `seq_number`: El número de secuencia
 - `remote_number`: El último numero de secuencia que arribo correctamente
-- `tries`: El numero de intentos con el que se valida si se perdio la conexión.
+- `tries`: El numero de intentos con el que se valida si se perdió la conexión.
 
-**Métodos interesantes de la implementación Socket:**
 
-- `handshake_client`/`handshake_server`: UDP es un servicio sin conexión, es decir que permite el envío de datagramas a través de la red sin que se haya establecido previamente una conexión. Es por eso que agregamos estos metodos para asegurarnos de una conexión segura. Una vez que nos aseguramos que el cliente y servidor tienen una conexión UDP, se realizan las configuraciones necesarias para comenzar el traspaso de información de un lado al otro.
-- `send_data`: Se encarga de enviar la data junto a su header a través del socket, por lo que empaqueta toda la información que corresponde y envía la data. Luego se quedara esperando el ACK correspondiente. En el caso de que se alcance el tiempo seteado de TIMEOUT, se reenviara el paquete. Este reintento no será infinito, se cuenta con una variable configurable de intentos, es decir que si intenta muchas veces el reenvio, el socket reconocerá que simplemente se perdió la conexión. Además se cuenta con un reconocimiento de paquetes duplicados, este caso aparece si se pierde el paquete que contiene el ACK, por lo que simplemente reenviará el mismo.
-- `receive_data`: Recibe la data a través del Socket, le remueve el header y envía el ACK para avisar que re recibio correctamente el paquete.
+En cuanto a los métodos importantes:
 
-**Métodos interesantes de la implementación Server:**
+<!-- Murieron en la última versión. `handshake_client`/`handshake_server`: UDP es un servicio sin conexión, es decir que permite el envío de datagramas a través de la red sin que se haya establecido previamente una conexión. Es por eso que agregamos estos métodos para asegurarnos de una conexión segura. Una vez que nos aseguramos que el cliente y servidor tienen una conexión UDP, se realizan las configuraciones necesarias para comenzar el traspaso de información de un lado al otro. -->
+- `send_data`: Se encarga de enviar la data junto a su header a través del socket, por lo que empaqueta toda la información que corresponde y envía la data. Luego se quedara esperando el ACK correspondiente. En el caso de que se alcance el tiempo seteado de `TIMEOUT`, se reenviara el paquete. Este reintento no será infinito, se cuenta con una variable configurable de intentos, es decir que si intenta muchas veces el reenvio, el socket reconocerá que simplemente se perdió la conexión. Además se cuenta con un reconocimiento de paquetes duplicados, este caso aparece si se pierde el paquete que contiene el ACK, por lo que simplemente reenviará el mismo.
+- `receive_data`: Recibe la data a través del socket, le remueve el header y envía el ACK para avisar que se recibio correctamente el paquete.
+
+### Go-Back-N
+
+Al igual que Stop and Wait, este protocolo asegura que la información no se pierda y llegue en orden correcto. A diferencia del anterior, el emisor no espera a recibir un ACK para seguir enviando paquetes, pero mantiene una ventana de paquetes que aún no recibieron el ACK. El protocolo implementado no utiliza buffering, es decir que el receptor descarta los paquetes fuera de orden.
+
+El segmento y el socket tienen los mismos atributos, con la diferencia de que el socket tendrá la ventana de paquetes sin enviar `in-flight`.
+
+Otros cambios en los métodos:
+
+- `send_data`: Si hay menos de `N` paquetes que no recibieron el ACK en la ventana `in-flight`, envía el paquete y lo agrega a la ventana. Toma solo un intento para recibir un ACK, y sigue en cualquier caso. En el caso contrario, se queda esperando a que reciba ACKs por parte del receptor.
+- `await_ack`: En el caso de que haya que esperar a un ACK, se llama a este método el cuál espera a un ACK de cualquiera de los paquetes encontrados en la ventana. Cada ACK elimina todos los paquetes de la lista hasta el número de secuencia correspondiente. Si se llega a un timeout, se reenvian los paquetes.
+- `receive_data`: Igual a Stop and Wait con la diferencia de que se envían todos los paquetes de la ventana `in-flight` hasta recibir ACKs antes de recibir paquetes.
+
+# Análisis
+
+Se ejecuta el comando `upload-file` con los protocolos y diferentes tamaño de archivo, y porcentajes de pérdidas de paquetes simulados con el comando comcast.
+
+<!-- TODO -->
+
+
 
 # Preguntas a responder
 
@@ -250,6 +291,8 @@ Se suele usar UDP cuando la velocidad en la entrega de los datos importa más qu
 Por otra parte, TCP se suele usar en el resto de los casos donde la confiabilidad de entrega es imprescindible. Algunas aplicaciones que utilizan protocolos de aplicación con TCP son por ejemplo e-mail, web y transferencia de archivos.
 
 # Dificultades encontradas
+
+- 
 
 # Conclusión
 

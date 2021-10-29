@@ -136,7 +136,6 @@ def validate_args(args):
     if args.verbose:
         args.verbose = VERBOSITY[args.verbose]
     if args.quiet:
-        # TODO encontrar un NOSET que funque
         logging.basicConfig(level=logging.CRITICAL)
     if not args.host or not args.host.replace(".", "").isdigit():
         args.host = DEFAULT_HOST
@@ -144,8 +143,5 @@ def validate_args(args):
         if args.port < 1024 or args.port > 65535:
             args.port = DEFAULT_PORT
     if args.filename:
-        # FIXME: this changes if the command is upload or download.
-        # if not os.path.exists(args.filename):
-        #     raise Exception(f'File {args.filename} not found')
         pass
     return args

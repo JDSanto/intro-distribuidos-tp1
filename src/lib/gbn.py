@@ -20,6 +20,11 @@ class GBNSocket(RDTSocket):
         return rdt_socket
 
     def send_data(self, data=b''):
+        """
+        Send data through the socket, creating the necessary headers.
+        If an ACK is not received, the packet is added to the in-flight list.
+        If the in-flight list is full, awaits ACKs for packages in the list.
+        """
         sent = False
 
         # If there is room in the window sent the pkt
@@ -44,6 +49,10 @@ class GBNSocket(RDTSocket):
             self.send_data(data)
 
     def process_ack(self, pkt):
+        """
+        Process a packet. If it's an ACK, remove it and all previous ones
+        from the in-flight list and return True.
+        """
         if pkt.ack:
             self.logger.debug(f"got ACK. ending. pkt=[{pkt}]")
             for i in range(len(self.in_flight)):
@@ -58,6 +67,10 @@ class GBNSocket(RDTSocket):
         return False
 
     def await_ack(self):
+        """
+        Waits and processes an ACK packet. If a timeout occurs without any new
+        ACK from the in-flight list, resend the packets in the list.
+        """
         try:
             pkt = self.receive_pkt(0, wait=True)
             if self.process_ack(pkt):
@@ -70,6 +83,9 @@ class GBNSocket(RDTSocket):
                 self.send_pkt(pkt.data, seq_number=pkt.seq_num)
 
     def await_empty_send_queue(self):
+        """
+        Send all packets in the in-flight list, awaiting ACKs.
+        """
         while len(self.in_flight):
             self.logger.debug(
                 (f"Still {len(self.in_flight)} packets in flight. "

@@ -1,6 +1,6 @@
 #!/usr/bin/python3
-from Metadata import Metadata
 from lib import utils
+from lib.metadata import Metadata
 from lib.tcpsocket import TCPSocket
 from lib.udpsocket import UDPSocket
 from lib.stopandwait import SaWSocket

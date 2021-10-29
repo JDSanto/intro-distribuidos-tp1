@@ -5,7 +5,7 @@ import traceback
 import os
 import threading
 
-from Metadata import Metadata
+from lib.metadata import Metadata
 from lib.tcpserver import TCPServer
 from lib.udpserver import UDPServer
 from lib.stopandwait import SaWServer
