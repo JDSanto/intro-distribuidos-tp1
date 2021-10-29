@@ -5,7 +5,14 @@ subtitle: |
   | [75.43 · 75.33 · 95.60] Introducción a los Sistemas Distribuidos
   |
   | 29 de octubre de 2021
+  | ---
 titlepage: true
+author: |
+  |  Albanesi, Marco·86063
+  |  del Mazo, Federico·100029
+  |  Di Santo, Javier Mariano·101696
+  |  Dvorkin, Camila·101109
+  |  Rombolá, Juan Pablo·97131
 colorlinks: true
 linkcolor: purple
 urlcolor: purple
@@ -15,7 +22,7 @@ header-includes: |
   \usepackage{fancyhdr}
   \pagestyle{fancy}
   \fancyhead[L]{2021C2}
-  \fancyhead[R]{[71.59] Técnicas de Programación Concurrente I \\ TP1: File Transfer}
+  \fancyhead[R]{Introducción a los Sistemas Distribuidos\\ TP1: File Transfer}
 
   \usepackage{listings}
   \lstset{
@@ -27,17 +34,6 @@ header-includes: |
       xleftmargin=12pt,
   }
   \let\OldTexttt\texttt
-
-
-  \author{
-    \begin{tabular}{cr}
-    Albanesi, Marco   & 86063 \\
-    del Mazo, Federico  & 100029 \\
-    Di Santo, Javier Mariano  & 101696 \\
-    Dvorkin, Camila  & 101109 \\
-    Rombolá, Juan Pablo & 97131 \\
-    \end{tabular}
-  }
 
 include-before: \renewcommand{\texttt}[1]{\OldTexttt{\color{magenta}{#1}}}
 ---
