@@ -3,10 +3,13 @@
 from lib.tcpsocket import TCPSocket
 from lib.udpsocket import UDPSocket
 from lib.stopandwait import SaWSocket
+from lib.gbn import GBNSocket
 
 from lib import utils
 import logging
 import os
+
+from Metadata import Metadata
 
 
 def download_file(socket, filename, dest_folder, logger):
@@ -14,23 +17,15 @@ def download_file(socket, filename, dest_folder, logger):
         logger.info(f"Creating destination folder: {dest_folder}")
         os.makedirs(dest_folder)
 
+    metadata = Metadata(utils.Command.DOWNLOAD.value, filename, 0)
+
     # Send the command to the server
-    logger.info(f"Sending DOWNLOAD command")
-    socket.send_data(utils.Command.DOWNLOAD.value)
+    logger.info("Sending metadata for DOWNLOAD command")
+    socket.send_data(bytes(metadata))
 
-    # Send the filename size
-    logger.info("Sending File size")
-    filename_size = len(filename)
-    socket.send_data(filename_size.to_bytes(utils.INT_SIZE, byteorder="big"))
-
-    # Send filename
-    logger.info(f"Sending filename: {filename}")
-    socket.send_data(filename.encode())
-
-    # Recieve the file size
     file_size = int.from_bytes(socket.receive_data(utils.INT_SIZE), "big")
 
-    # Recieve the file
+    # Receive the file
     logger.info("Downloading file")
     with open(os.path.join(dest_folder, filename), "wb") as f:
         while file_size > 0:
@@ -39,7 +34,10 @@ def download_file(socket, filename, dest_folder, logger):
             file_size -= len(data)
 
     logger.info("File downloaded")
+
     socket.send_data(utils.Status.OK.value)
+
+    socket.send_data(utils.Command.SHUTDOWN.value)
 
     socket.close()
 
@@ -65,6 +63,9 @@ if __name__ == "__main__":
     elif args.protocol == utils.Protocol.SAW:
         client = SaWSocket.connect("localhost", args.port, logger)
         logger.info("Starting File Transfer App with UDP+SaW...")
+    elif args.protocol == utils.Protocol.GBN:
+        client = GBNSocket.connect("localhost", args.port, logger)
+        logger.info("Starting File Transfer App with UDP+GBN...")
 
     download_file(client, args.filename, args.dst, logger)
     logger.info("File transfer complete")

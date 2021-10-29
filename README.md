@@ -79,6 +79,14 @@ Automated tests for running the server with the upload/download commands (tested
 bash test-connection.sh <protocol> [-v]
 ```
 
-## comcast
+To actually test the delivery guarantees, we need to simulate an unreliable or weak network. For this, we use [comcast](), a Go app. After installing `go` and `comcast`, you can run the same tests under our simulated environment with:
 
-For testing weak or unreliable connections, check out [comcast](https://github.com/tylertreat/comcast)
+```
+# We first need to know our network device, we can get it by grepping the lshw command
+sudo lshw -C network | grep 'logical name' 
+# In my case, my device is `enp2s0`
+
+comcast --device=enp2s0 --packet-loss=10%
+bash test-connection.sh <protocol> [-v]
+comcast --stop
+```
