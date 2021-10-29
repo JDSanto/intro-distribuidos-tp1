@@ -5,11 +5,12 @@ import traceback
 import os
 import threading
 
-
+from Metadata import Metadata
 from lib.tcpserver import TCPServer
 from lib.udpserver import UDPServer
 from lib.stopandwait import SaWServer
 from lib import utils
+from lib.utils import METADATA_FIXED_SIZE
 
 
 class SigException(Exception):
@@ -20,18 +21,13 @@ def sig_handler(sig, frame):
     raise SigException()
 
 
-def receive_file(socket, dest_folder, logger):
+def receive_file(socket, metadata, dest_folder, logger):
     if not os.path.isdir(dest_folder):
         logger.info(f"Creating destination folder: {dest_folder}")
         os.makedirs(dest_folder)
 
-    # Receive filename size and file size
-    file_size = int.from_bytes(socket.receive_data(utils.INT_SIZE), "big")
-    filename_size = int.from_bytes(socket.receive_data(utils.INT_SIZE), "big")
-
-    # Receive filename
-    filename = socket.receive_data(filename_size).decode()
-    logger.info(f"Receiving filename: {filename}")
+    file_size = metadata.filesize
+    filename = metadata.filename
 
     # Receive file
     with open(os.path.join(dest_folder, filename), "wb") as f:
@@ -44,13 +40,8 @@ def receive_file(socket, dest_folder, logger):
     socket.send_data(utils.Status.OK.value)
 
 
-def send_file(socket, dest_folder, logger):
-    # Receive filename size
-    filename_size = int.from_bytes(socket.receive_data(utils.INT_SIZE), "big")
-
-    # Receive filename
-    filename = socket.receive_data(filename_size).decode()
-    logger.info(f"Receiving filename: {filename}")
+def send_file(socket, metadata, dest_folder, logger):
+    filename = metadata.filename
 
     # Send file size
     file_size = os.path.getsize(os.path.join(dest_folder, filename))
@@ -76,16 +67,14 @@ def send_file(socket, dest_folder, logger):
 
 
 def serve(socket, dest_folder, logger):
-    data = socket.receive_data(1)
-    logger.info(f"Serving command: {data}")
+    metadata = Metadata.from_bytes(socket.receive_data(METADATA_FIXED_SIZE))
+    logger.info(f"Serving command: {metadata}")
 
-    command = utils.Command(data)
+    if metadata.is_upload():
+        receive_file(socket, metadata, dest_folder, logger)
 
-    if command == utils.Command.UPLOAD:
-        receive_file(socket, dest_folder, logger)
-
-    if command == utils.Command.DOWNLOAD:
-        send_file(socket, dest_folder, logger)
+    if metadata.is_download():
+        send_file(socket, metadata, dest_folder, logger)
 
     socket.close()
 

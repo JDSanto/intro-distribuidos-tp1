@@ -8,26 +8,20 @@ from lib import utils
 import logging
 import os
 
+from Metadata import Metadata
+
 
 def download_file(socket, filename, dest_folder, logger):
     if not os.path.isdir(dest_folder):
         logger.info(f"Creating destination folder: {dest_folder}")
         os.makedirs(dest_folder)
 
+    metadata = Metadata(utils.Command.DOWNLOAD.value, filename, 0)
+
     # Send the command to the server
-    logger.info(f"Sending DOWNLOAD command")
-    socket.send_data(utils.Command.DOWNLOAD.value)
+    logger.info("Sending metadata for DOWNLOAD command")
+    socket.send_data(bytes(metadata))
 
-    # Send the filename size
-    logger.info("Sending File size")
-    filename_size = len(filename)
-    socket.send_data(filename_size.to_bytes(utils.INT_SIZE, byteorder="big"))
-
-    # Send filename
-    logger.info(f"Sending filename: {filename}")
-    socket.send_data(filename.encode())
-
-    # Receive the file size
     file_size = int.from_bytes(socket.receive_data(utils.INT_SIZE), "big")
 
     # Receive the file

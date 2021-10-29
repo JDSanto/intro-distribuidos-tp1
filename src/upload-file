@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-
+from Metadata import Metadata
 from lib import utils
 from lib.tcpsocket import TCPSocket
 from lib.udpsocket import UDPSocket
@@ -7,7 +7,6 @@ from lib.stopandwait import SaWSocket
 
 import logging
 import os
-import time
 
 
 def upload_file(socket, filename, filedir, logger):
@@ -16,21 +15,13 @@ def upload_file(socket, filename, filedir, logger):
         logger.error(f"The file {filepath} does not exist")
         return
 
-    # Send the command to the server
-    logger.info("Sending UPLOAD command")
-    socket.send_data(utils.Command.UPLOAD.value)
-
-    # Send the filename size and the file size
-    logger.info("Sending File size")
     file_size = os.path.getsize(filepath)
-    filename_size = len(filename)
-    socket.send_data(file_size.to_bytes(utils.INT_SIZE, byteorder="big"))
 
-    socket.send_data(filename_size.to_bytes(utils.INT_SIZE, byteorder="big"))
+    metadata = Metadata(utils.Command.UPLOAD.value, filename, file_size)
 
-    # Send the filename
-    logger.info(f"Sending filename: {filename}")
-    socket.send_data(filename.encode())
+    # Send the command to the server
+    logger.info("Sending metadata for UPLOAD command")
+    socket.send_data(bytes(metadata))
 
     # Send the file
     logger.info("Sending file")

@@ -11,6 +11,7 @@ INT_SIZE = 4
 CHAR_SIZE = 1
 MSG_SIZE = 1024
 MAX_DG_SIZE = (1 << 16) - 1
+METADATA_FIXED_SIZE = 64
 
 
 class Command(Enum):
