@@ -47,37 +47,36 @@ generate_file() {
 	fi 
 }
 
-client_upload_file() {
-    python src/upload-file -P $1 -s . -n $TEST_FILE >"$STD_REDDIR" 2>&1 &
+client_transfer_file() {
+    cmd="python src/$1-file -P $2 -$3 . -n $TEST_FILE"
+	
+	local start=$(date +%s%N)
+    $cmd > "$STD_REDDIR" 2>&1 &
     wait $!
-    if [ $? -ne 0 ]; then
+    local exit_code=$?
+    if [ $exit_code -ne 0 ]; then
         echo "ERROR: Client exited unexpectedly"
         ERROR=1
     fi
-
+    
+	ELAPSED=$(echo "print(($(date +%s%N) - ${start})/1000000000.0)" | python)
+	echo >> "${RESULTS:-/dev/null}" "${PLOSS};${SIZE};${PROTO};${1};${ELAPSED};${exit_code}"
+    
     diff $TEST_FILE $TEST_BUCKET_NAME/$TEST_FILE >/dev/null 2>&1
     if [ $? -ne 0 ]; then
         echo "ERROR: Files differ."
         ERROR=1
     fi
     sleep 0.1
+}
+
+client_upload_file() {
+    client_transfer_file upload $1 "s"
 }
 
 client_download_file() {
-    python src/download-file -P $1 -d . -n $TEST_FILE >"$STD_REDDIR" 2>&1 &
-    wait $!
-    if [ $? -ne 0 ]; then
-        echo "ERROR: Client exited unexpectedly"
-    fi
-
-    diff $TEST_FILE $TEST_BUCKET_NAME/$TEST_FILE >/dev/null 2>&1
-    if [ $? -ne 0 ]; then
-        echo "ERROR: Files differ."
-        ERROR=1
-    fi
-    sleep 0.1
+    client_transfer_file download $1 "d"
 }
-
 
 kill_system() {
     jobs -p | xargs kill -9 >/dev/null 2>&1
@@ -92,21 +91,17 @@ test_system() {
 
     clean_testing_files
 
-    start_server $1
-
     check_server_status
 
     generate_file $2
 
-    client_upload_file $1
+    PROTO=$1 SIZE=$2 client_upload_file $1
 
     check_server_status
 
-    client_download_file $1
+    PROTO=$1 SIZE=$2 client_download_file $1
 
     check_server_status
-
-    stop_server
 
     clean_testing_files
 
@@ -131,13 +126,17 @@ if [ "$2" == '-v' ]; then
     STD_REDDIR='/dev/tty'
 fi
 
-for i in 100 500 1000 5000 10000 100000 500000; do
+start_server $1
+
+for i in 100 1000 10000 100000 1000000; do
     test_system $1 $i
     sleep 0.25
     if [ $ERROR -ne 0 ]; then
         break
     fi
 done
+
+stop_server
 
 kill_system
 
