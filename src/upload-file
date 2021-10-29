@@ -1,13 +1,13 @@
 #!/usr/bin/python3
-from lib import utils
-from lib.metadata import Metadata
-from lib.tcpsocket import TCPSocket
-from lib.udpsocket import UDPSocket
-from lib.stopandwait import SaWSocket
-from lib.gbn import GBNSocket
-
 import logging
 import os
+
+from lib import utils
+from lib.gbn import GBNSocket
+from lib.metadata import Metadata
+from lib.stopandwait import SaWSocket
+from lib.tcpsocket import TCPSocket
+from lib.udpsocket import UDPSocket
 
 
 def upload_file(socket, filename, filedir, logger):
