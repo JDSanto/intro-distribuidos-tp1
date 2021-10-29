@@ -21,7 +21,11 @@ class Metadata:
         return self.opcode == utils.Command.DOWNLOAD.value
 
     def __bytes__(self):
-        return self.opcode + bytearray(f"{self.filename:59}", "utf-8") + self.filesize.to_bytes(4, "big")
+        return (
+            self.opcode
+            + bytearray(f"{self.filename:59}", "utf-8")
+            + self.filesize.to_bytes(4, "big")
+        )
 
     def __str__(self):
         if self.is_download():

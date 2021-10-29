@@ -19,7 +19,7 @@ class GBNSocket(RDTSocket):
         rdt_socket = GBNSocket(udp_socket, logger)
         return rdt_socket
 
-    def send_data(self, data=b''):
+    def send_data(self, data=b""):
         """
         Send data through the socket, creating the necessary headers.
         If an ACK is not received, the packet is added to the in-flight list.
@@ -57,7 +57,7 @@ class GBNSocket(RDTSocket):
             self.logger.debug(f"got ACK. ending. pkt=[{pkt}]")
             for i in range(len(self.in_flight)):
                 if self.in_flight[i].seq_num == pkt.seq_num:
-                    self.in_flight = self.in_flight[i + 1:]
+                    self.in_flight = self.in_flight[i + 1 :]
                     return True
         else:
             # If the pkt was not an ack then it is dropped.
@@ -79,7 +79,9 @@ class GBNSocket(RDTSocket):
             if not self.in_flight:
                 return
             # Re-send unacknowledged pkts
-            self.logger.debug(f"got timeout. resending from seq_num {self.in_flight[0].seq_num}")
+            self.logger.debug(
+                f"got timeout. resending from seq_num {self.in_flight[0].seq_num}"
+            )
             self.tries += 1
             for pkt in self.in_flight:
                 self.send_pkt(pkt.data, seq_number=pkt.seq_num)
@@ -90,8 +92,11 @@ class GBNSocket(RDTSocket):
         """
         while len(self.in_flight):
             self.logger.debug(
-                (f"Still {len(self.in_flight)} packets in flight. "
-                 f"{self.in_flight[0].seq_num} to {self.in_flight[-1].seq_num}"))
+                (
+                    f"Still {len(self.in_flight)} packets in flight. "
+                    f"{self.in_flight[0].seq_num} to {self.in_flight[-1].seq_num}"
+                )
+            )
             self.await_ack()
             if self.tries == RDTSocket.N_TRIES:
                 raise Exception("Connection lost")

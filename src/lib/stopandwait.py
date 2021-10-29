@@ -7,7 +7,6 @@ from lib.rdt import RDTSegment, RDTSocket
 
 
 class SaWSocket(RDTSocket):
-
     @staticmethod
     def connect(host, port, logger):
         udp_socket = UDPSocket.connect(host, port, logger)

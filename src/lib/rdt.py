@@ -18,9 +18,9 @@ class RDTSegment:
     @staticmethod
     def unpack(data):
         seq_num = int.from_bytes(data[: RDTSegment.SEQ_SIZE], byteorder="big")
-        data = data[RDTSegment.SEQ_SIZE:]
+        data = data[RDTSegment.SEQ_SIZE :]
 
-        ack = int.from_bytes(data[: 1], byteorder="big")
+        ack = int.from_bytes(data[:1], byteorder="big")
         data = data[1:]
 
         return RDTSegment(data, seq_num, ack)

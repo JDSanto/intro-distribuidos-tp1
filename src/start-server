@@ -50,7 +50,6 @@ def send_file(socket, metadata, dest_folder, logger):
     socket.send_data(file_size.to_bytes(utils.INT_SIZE, byteorder="big"))
 
     # Send file
-    # TODO: check if file exists, send error if it doesn't
     logger.info("Sending file")
     with open(os.path.join(dest_folder, filename), "rb") as f:
         while file_size > 0:
