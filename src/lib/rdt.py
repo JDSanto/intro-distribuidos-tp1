@@ -40,10 +40,6 @@ class RDTSegment:
     def increment(seq_num):
         return (seq_num + 1) % (1 << 8 * RDTSegment.SEQ_SIZE)
 
-    @staticmethod
-    def increment(seq_num):
-        return (seq_num + 1) % (1 << 8 * RDTSegment.SEQ_SIZE)
-
 
 class RDTSocket(Socket):
     TIMEOUT = 0.1
@@ -72,11 +68,11 @@ class RDTSocket(Socket):
         self.conn_socket.send_data(pkt.to_bytes())
         return pkt
 
-    def receive_pkt(self, buffer_size, wait=True):
+    def receive_pkt(self, buffer_size, blocking=True):
         """
         Receive an UDPPackage through the socket
         """
-        data = self.conn_socket.receive_data(buffer_size + RDTSegment.HEADER_SIZE, wait)
+        data = self.conn_socket.receive_data(buffer_size + RDTSegment.HEADER_SIZE, blocking)
         return RDTSegment.unpack(data) if data else None
 
     def receive_data(self, buffer_size):

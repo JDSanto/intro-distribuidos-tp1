@@ -37,14 +37,15 @@ class GBNSocket(RDTSocket):
             self.logger.debug("window is full.")
 
         # Process ACKS without blocking
-        pkt = self.receive_pkt(1000, wait=False)
+        pkt = self.receive_pkt(1000, blocking=False)
         while pkt is not None:
             self.process_ack(pkt)
-            pkt = self.receive_pkt(0, wait=False)
+            pkt = self.receive_pkt(0, blocking=False)
 
         # If the window was full => block until there is room
         if not sent:
-            self.await_ack()
+            if len(self.in_flight) == GBNSocket.WINDOW_SIZE:
+                self.await_ack()
             # reattempt to send after wait
             self.send_data(data)
 
@@ -72,7 +73,7 @@ class GBNSocket(RDTSocket):
         ACK from the in-flight list, resend the packets in the list.
         """
         try:
-            pkt = self.receive_pkt(0, wait=True)
+            pkt = self.receive_pkt(0)
             if self.process_ack(pkt):
                 self.tries = 0
         except socket.timeout:
