@@ -71,7 +71,7 @@ Donde cada flag indica:
 - `p/--port`: Indica el puerto
 - `-s/--src`: Indica el path del archivo a subir.
 - `-n/--name`: Nombre del archivo a subir.
-- `-P/--protocol`: Para indicar el protocolo a utilizar. En el mismo se puede ingresar "tcp" para utilizar el protocolo de TCP, "udp+saw" para usar UDP con la implementación de Stop and Wait y "udp+gbn" para usar UDP con el protocolo de Go-Back-N.
+- `-P/--protocol`: Para indicar el protocolo a utilizar. En el mismo se puede ingresar "tcp" para utilizar el protocolo de TCP, "udp" para usar UDP, "udp+saw" para usar UDP con la implementación de Stop and Wait y "udp+gbn" para usar UDP con el protocolo de Go-Back-N.
 
 En nuestra implementación, sin importar el protocolo, esta operación sigue los siguientes pasos:
 1. Crea un Socket con el protocolo correspondiente según el parámetro ingresado en `-P/--protocol` en el host "localhost" y el puerto pasado por parámetro.
@@ -127,7 +127,51 @@ El servidor va a proveer el servicio de almacenamiento y descarga de archivos. P
 TCP es un protocolo orientado a la conexión, es decir que antes de que el cliente y el servidor comienzan a enviarse datos entre sí, se debe cumplir un proceso de tres fases.
 ### Cliente
 
-Es el encargado de iniciar el contacto con el servidor, para ello, debe crear un socket TCP especificando la dirección del socket (IP del host servidor enviado por parámetro).
+Es el encargado de iniciar el contacto con el servidor, para ello, debe crear un socket TCP y conectarlo con el servidor. Esto se resuelve en el método estatico `connect()` que primero mediante el llamado a `socket()` se ocupa de crear el socket del cliente indicando que la red subyacente esta utilizando IPv4 y que el socket es TCP (SOCK_STREAM). Y luego con el llamado a `connect()` establece la conexión cliente servidor especificando la dirección del socket (IP del host servidor enviado por parámetro) y el host que en este caso se trata de "localhost".
+
+Por otro lado, contamos con los métodos de `send_data()` y `receive_data()`. En el primero, el programa cliente simplemente coloca los bytes de la cadena en la conexión TCP y en el segundo, que queda a la espera de recibir la cantidad de bytes especificada del servidor. A medida que se recibe la información, se va acumulando en una variable `data` hasta completar el buffer_size correspondiente.
+
+Por último se cuenta con un método `close()` encargado de cerrar el socket y por lo tanto la conexión TCP entre el cliente y el servidor.
+
+### Servidor
+
+De la misma manera que el cliente, se cuenta con un método de inicialización que llamaremos `start()`. Este también crea un socket especificando de la misma manera que hace uso de IPv4 y TCP. Se asocua el numero de puerto del servidor y dejamos el socket a la escucha de solicitudes de conexión TCP del cliente. Tambien tenemos el método para cerrar la conexión.
+
+Por último se cuenta con el método `wait_for_connection` que se va a encargar de dedicarle un TCPSocket al cliente concreto que se conecta al mismo. 
+
+## UDP
+
+El protocolo UDP es un servicio sin conexión, no ofrece fiabilidad, ni control de flujos, ni control de congestión, es por eso que se implementa una versión utilizando el protocolo Stop & Wait y otra versión utilizando el protocolo Go-Back-N, con el objetivo de lograr una transferencia confiable al utilizar el protocolo.
+
+En una primera instancia se elabora un `UDPServer` y un `UDPSocket` que resuelven el protocolo sin agregar diferentes servicios fiables de transferencia de datos. 
+Algunos detalles interesantes de esta implementación mas sencilla incluyen:
+// TODO explicar 
+1. condvar y cola de data
+2. waitforconnection
+### Stop and Wait
+
+La implementación de este protocolo nos va a asegurar que la información no se pierda y que los paquetes se reciban en el orden correcto. La idea principal de este protocolo es que el cliente no envía paquetes hasta que recibe una señal ACK y el servidor por su parte se encarga de mandar este ACK siempre y cuando reciba un paquete valido. 
+Si el ACK no logra llegar al emisor antes de un cierto tiempo, llamado tiempo de espera, entonces el emisor, reenvía la trama otra vez. En caso de que el emisor sí reciba el ACK, entonces envía la siguiente trama.
+
+El **segmento** que utilizamos cuenta con:
+- `data`: La información que se envia en el paqiete
+- `seq_number` : El numero de secuencia que se le asigna al paquete enviado.
+- `ack`: Indica si es una señal ACK, es decir simplemente un mensaje que indica que se recibió el paquete de forma correcta.
+- `handshake`: Indica si es un paquete de inicialización de conexión o es un paquete de transferencia de datos una vez inicializada la conexión.
+
+Mientras que el **Socket** cuenta con:
+- `conn_socket`: La conexión al socket
+- `seq_number`: El numero de secuencia
+- `remote_number`: El último numero de secuencia que arribo correctamente
+- `tries`: El numero de intentos con el que se valida si se perdio la conexión.
+
+**Métodos interesantes de la implementación Socket:**
+
+- `handshake_client`/`handshake_server`: UDP es un servicio sin conexión, es decir que permite el envío de datagramas a través de la red sin que se haya establecido previamente una conexión. Es por eso que agregamos estos metodos para asegurarnos de una conexión segura. Una vez que nos aseguramos que el cliente y servidor tienen una conexión UDP, se realizan las configuraciones necesarias para comenzar el traspaso de información de un lado al otro.
+- `send_data`: Se encarga de enviar la data junto a su header a través del socket, por lo que empaqueta toda la información que corresponde y envía la data. Luego se quedara esperando el ACK correspondiente. En el caso de que se alcance el tiempo seteado de TIMEOUT, se reenviara el paquete. Este reintento no será infinito, se cuenta con una variable configurable de intentos, es decir que si intenta muchas veces el reenvio, el socket reconocerá que simplemente se perdió la conexión. Además se cuenta con un reconocimiento de paquetes duplicados, este caso aparece si se pierde el paquete que contiene el ACK, por lo que simplemente reenviará el mismo.
+- `receive_data`: Recibe la data a través del Socket, le remueve el header y envía el ACK para avisar que re recibio correctamente el paquete.
+
+**Métodos interesantes de la implementación Server:**
 
 # Preguntas a responder
 
