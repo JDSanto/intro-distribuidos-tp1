@@ -138,9 +138,7 @@ if [ "$2" == '-v' ]; then
     STD_REDDIR='/dev/tty'
 fi
 
-start_server $1
-
-for i in 100 1000 10000 100000 1000000; do
+for i in 100 500 1000 10000 100000 500000; do
     test_system $1 $i
     sleep 0.25
     if [ $ERROR -ne 0 ]; then
