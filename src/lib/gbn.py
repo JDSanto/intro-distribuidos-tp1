@@ -76,6 +76,8 @@ class GBNSocket(RDTSocket):
             if self.process_ack(pkt):
                 self.tries = 0
         except socket.timeout:
+            if not self.in_flight:
+                return
             # Re-send unacknowledged pkts
             self.logger.debug(f"got timeout. resending from seq_num {self.in_flight[0].seq_num}")
             self.tries += 1

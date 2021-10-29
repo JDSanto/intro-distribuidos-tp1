@@ -32,5 +32,5 @@ class TCPSocket(Socket):
         self.logger.debug(f'received {bytes_received} of {buffer_size}')
         return data
 
-    def close(self):
+    def close(self, wait=True):
         self.conn_socket.close()
